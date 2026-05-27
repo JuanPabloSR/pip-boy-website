@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-pipboy-green: #14F814;
+  --color-pipboy-green-dim: #0c940c;
+  --color-pipboy-bg: #000000;
+  --font-pipboy: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+@layer base {
+  html {
+    font-size: 120%;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #000000;
+    color: #14F814;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    text-shadow: 0 0 3px rgba(20, 248, 20, 0.6), 0 0 10px rgba(20, 248, 20, 0.2);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    text-transform: uppercase;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scanlines Overlay */
+  body::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
+    background-size: 100% 4px, 3px 100%;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  /* CRT Vignette */
+  body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.85) 100%);
+    z-index: 9998;
+    pointer-events: none;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #000; border-left: 1px solid #0c940c; }
+  ::-webkit-scrollbar-thumb { background: #14F814; }
+
+}
+
+/* ── Global Keyframes ── */
+@keyframes flicker {
+  0%   { opacity: 1; }
+  92%  { opacity: 1; }
+  93%  { opacity: 0.85; }
+  94%  { opacity: 1; }
+  96%  { opacity: 0.90; }
+  98%  { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+@keyframes ping {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ── Utility Classes ── */
+.crt-flicker    { animation: flicker 6s infinite; }
+.glow-text      { text-shadow: 0 0 4px rgba(20,248,20,0.8), 0 0 14px rgba(20,248,20,0.4); }
+.glow-border    { box-shadow: 0 0 6px rgba(20,248,20,0.4), inset 0 0 6px rgba(20,248,20,0.05); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar   { -ms-overflow-style: none; scrollbar-width: none; }
