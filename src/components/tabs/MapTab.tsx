@@ -10,7 +10,6 @@ const GREEN = '#14F814';
 const WIDTH = 380;
 const HEIGHT = 540;
 const ZOOM_SCALE = 4.2; // ratio between Santander and Colombia projections
-const TRANSITION = { duration: 1.8, ease: [0.4, 0, 0.2, 1] as const };
 
 // Santander cities [lon, lat]
 const santanderCities: CityDef[] = [
@@ -125,7 +124,12 @@ export default function MapTab() {
             scale: isSantander ? ZOOM_SCALE : 1,
             opacity: isSantander ? 0 : 1,
           }}
-          transition={TRANSITION}
+          transition={{
+            scale: { duration: 1.8, ease: [0.4, 0, 0.2, 1] },
+            opacity: isSantander
+              ? { duration: 1.0, delay: 0.4, ease: 'easeIn' }
+              : { duration: 0.5, delay: 1.1, ease: 'easeOut' },
+          }}
           style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -142,7 +146,12 @@ export default function MapTab() {
             scale: isSantander ? 1 : 1 / ZOOM_SCALE,
             opacity: isSantander ? 1 : 0,
           }}
-          transition={TRANSITION}
+          transition={{
+            scale: { duration: 1.8, ease: [0.4, 0, 0.2, 1] },
+            opacity: isSantander
+              ? { duration: 0.5, delay: 1.1, ease: 'easeOut' }
+              : { duration: 0.5, ease: 'easeIn' },
+          }}
           style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -152,15 +161,6 @@ export default function MapTab() {
         >
           <SantanderMapSVG />
         </motion.div>
-
-        {/* Edge fade vignette during transition */}
-        <motion.div
-          animate={{ opacity: isSantander ? 0 : 0 }}
-          style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            boxShadow: `inset 0 0 40px 15px rgba(0,0,0,0.8)`,
-          }}
-        />
 
         {/* Vault Boy */}
         <img
