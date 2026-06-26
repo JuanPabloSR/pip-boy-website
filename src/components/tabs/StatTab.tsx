@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import thumbsUpGif from '../../assets/correct-thumbs-up.gif';
-import walkGif from '../../assets/derek-walk.gif';
+import flexGif from '../../assets/vaultboy-flex.gif';
 import gamingGif from '../../assets/gaming.gif';
+import VaultBoyDisplay from '../VaultBoyDisplay';
 import { soundEffects } from '../../utils/audio';
 
 type SubTab = 'STATUS' | 'SPECIAL' | 'PERKS';
@@ -119,7 +120,7 @@ export default function StatTab() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <VaultBoyGIF size={320} src={thumbsUpGif} />
+                <VaultBoyDisplay src={thumbsUpGif} size={320} />
               </div>
             </motion.div>
           )}
@@ -148,7 +149,7 @@ export default function StatTab() {
               {/* Detail */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <VaultBoyGIF size={240} src={walkGif} />
+                  <VaultBoyDisplay src={flexGif} size={480} />
                 </div>
                 <div style={{ border: `1px solid ${GREEN}`, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{selectedSpecial.name}</div>
@@ -192,7 +193,7 @@ export default function StatTab() {
                 ))}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <VaultBoyGIF size={260} src={gamingGif} />
+                <VaultBoyDisplay src={gamingGif} size={260} />
               </div>
             </motion.div>
           )}
@@ -203,18 +204,4 @@ export default function StatTab() {
   );
 }
 
-function VaultBoyGIF({ size, src }: { size: number, src: string }) {
-  return (
-    <img 
-      src={src} 
-      alt="Vault Boy"
-      style={{ 
-        width: size, 
-        height: size, 
-        objectFit: 'contain',
-        mixBlendMode: 'screen', // Removes the black background box entirely
-        filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)'
-      }} 
-    />
-  );
-}
+

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import walkGif from '../../assets/derek-walk.gif';
+import VaultBoyDisplay from '../VaultBoyDisplay';
 
 const GREEN = '#14F814';
 
@@ -48,65 +49,18 @@ export default function MapTab() {
 
         <SantanderMap />
 
-        {/* ── Bucaramanga pulsing marker ── */}
-        <div style={{ position: 'absolute', left: '58%', top: '18%', transform: 'translate(-50%,-50%)' }}>
-          <div style={{
-            width: '16px', height: '16px', borderRadius: '50%', background: GREEN,
-            boxShadow: `0 0 0 0 ${GREEN}`,
-            animation: 'ping 1.4s cubic-bezier(0,0,0.2,1) infinite',
-            position: 'absolute', top: 0, left: 0,
-          }} />
-          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: GREEN, position: 'relative', zIndex: 1, boxShadow: `0 0 8px ${GREEN}` }} />
-        </div>
-        <div style={{ position: 'absolute', left: 'calc(58% + 16px)', top: 'calc(18% - 8px)', fontSize: '0.7rem', color: GREEN, textShadow: `0 0 6px ${GREEN}`, fontWeight: 'bold', letterSpacing: '1px' }}>
-          BUCARAMANGA
-        </div>
-
-        {/* Secondary city markers */}
-        <CityDot left="28%" top="38%" label="BARRANC." />
-        <CityDot left="52%" top="55%" label="SAN GIL" />
-        <CityDot left="48%" top="68%" label="SOCORRO" />
-        <CityDot left="68%" top="58%" label="MÁLAGA" />
-        <CityDot left="35%" top="78%" label="VÉLEZ" />
-
         {/* Vault Boy */}
-        <img
-          src={walkGif}
-          alt="Vault Boy"
-          style={{
-            position: 'absolute', bottom: '8px', left: '8px',
-            width: 75, height: 75, objectFit: 'contain',
-            mixBlendMode: 'screen',
-            filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)',
-            opacity: 0.9,
-          }}
-        />
+        <div style={{ position: 'absolute', bottom: '8px', left: '8px' }}>
+          <VaultBoyDisplay src={walkGif} size={75} />
+        </div>
 
         {/* Corner labels */}
         <span style={{ position: 'absolute', top: '6px', left: '8px', fontSize: '0.62rem', opacity: 0.4 }}>N 8°09'</span>
         <span style={{ position: 'absolute', bottom: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4 }}>W 73°38'</span>
         <span style={{ position: 'absolute', top: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4 }}>DPTO. SANTANDER</span>
-        <span style={{ position: 'absolute', bottom: '6px', left: '85px', fontSize: '0.6rem', opacity: 0.25, letterSpacing: '1px' }}>VAULT-TEC CARTOGRAPHY v3.1</span>
+        <span style={{ position: 'absolute', bottom: '6px', left: '85px', fontSize: '0.6rem', opacity: 0.25, letterSpacing: '1px' }}>VAULT-TEC CARTOGRAPHY v3.2</span>
       </div>
     </motion.div>
-  );
-}
-
-function CityDot({ left, top, label }: { left: string; top: string; label: string }) {
-  return (
-    <>
-      <div style={{
-        position: 'absolute', left, top, transform: 'translate(-50%,-50%)',
-        width: '8px', height: '8px', borderRadius: '50%',
-        border: `1px solid ${GREEN}`, background: 'rgba(20,248,20,0.3)',
-      }} />
-      <span style={{
-        position: 'absolute',
-        left: `calc(${left} + 8px)`,
-        top: `calc(${top} - 6px)`,
-        fontSize: '0.52rem', color: GREEN, opacity: 0.5, letterSpacing: '0.5px',
-      }}>{label}</span>
-    </>
   );
 }
 
@@ -132,144 +86,172 @@ function WaypointCard({ icon, label, value, sub, link }: { icon: string; label: 
   return card;
 }
 
-/**
- * SVG outline of Santander (Colombia) traced from reference image.
- * Key feature: deep western inlets (canyons/ríos) creating jagged "fingers".
- * Bucaramanga sits in the north-central area.
- */
+// Accurate Santander (Colombia) outline based on real geographic boundaries
+// Coordinate system: x = longitude mapped, y = latitude mapped (inverted)
+// Bounds: lat 5.82-7.58, lon -74.20 to -72.68
 function SantanderMap() {
-  // Outline traced clockwise from top-left
+  // Accurate outline of Santander traced from geographic boundaries
+  // Clockwise from northwest corner
   const outline = `
-    M 220,50
-
-    L 240,35 L 258,28 L 272,32 L 278,18 L 295,10 L 312,14 L 322,28
-    L 338,18 L 352,10 L 368,20 L 380,32 L 388,48
-
-    L 396,68 L 402,90 L 408,115 L 412,140 L 416,170 L 418,200
-
-    L 416,230 L 414,258 L 416,285 L 418,310 L 416,340 L 414,365 L 416,390
-
-    L 420,415 L 424,440 L 420,465 L 415,490 L 405,512 L 392,530
-
-    L 375,545 L 355,555 L 332,565 L 308,572 L 282,578 L 258,580
-
-    L 235,576 L 212,568 L 192,555 L 175,540 L 160,520 L 148,498
-
-    L 138,475 L 128,450 L 120,428 L 112,405 L 105,385
-
-    L 95,370 L 82,358 L 68,350 L 52,345
-    L 58,332 L 72,322 L 82,315
-
-    L 68,305 L 50,292 L 35,282 L 22,275
-    L 32,262 L 48,252 L 62,245
-
-    L 48,235 L 30,222 L 18,210 L 10,198
-    L 20,186 L 38,178 L 52,172
-
-    L 40,162 L 25,150 L 15,140 L 8,128
-    L 18,118 L 35,112 L 52,108
-
-    L 42,98 L 30,88 L 22,78 L 18,68
-    L 30,62 L 48,58 L 62,56
-
-    L 78,55 L 95,52 L 112,50 L 130,48 L 150,46
-    L 172,48 L 195,48 L 220,50
-
+    M 58,78
+    L 65,72 L 75,65 L 88,58 L 102,52 L 118,46 L 135,40
+    L 152,35 L 168,30 L 182,25 L 195,20 L 208,15 L 220,10
+    L 232,8 L 244,6 L 255,8 L 265,12 L 274,18
+    L 283,25 L 292,34 L 300,44 L 308,52 L 316,58
+    L 324,62 L 332,68 L 340,76 L 346,85 L 350,95
+    L 354,106 L 357,118 L 360,132 L 362,145 L 363,158
+    L 364,170 L 366,182 L 368,194 L 370,206
+    L 372,218 L 374,230 L 375,242 L 376,254 L 375,266
+    L 373,278 L 370,290 L 366,302 L 362,312
+    L 357,322 L 351,332 L 345,342 L 338,352
+    L 330,362 L 322,370 L 313,378 L 304,386
+    L 294,394 L 284,400 L 274,406 L 264,412
+    L 254,418 L 244,424 L 234,430 L 224,436
+    L 214,442 L 204,448 L 194,454 L 184,460
+    L 174,466 L 165,472 L 156,478 L 148,484
+    L 140,490 L 133,496 L 126,502 L 120,508
+    L 115,514 L 111,520 L 108,526 L 106,530
+    L 103,528 L 100,522 L 97,514 L 94,504
+    L 90,492 L 86,480 L 82,468 L 78,456
+    L 74,444 L 70,432 L 66,420 L 62,408
+    L 58,396 L 54,384 L 50,372 L 46,360
+    L 42,348 L 38,336 L 34,325 L 30,314
+    L 27,303 L 24,292 L 22,282 L 20,272
+    L 19,262 L 18,252 L 18,242 L 19,232
+    L 20,222 L 22,212 L 24,202 L 27,192
+    L 30,182 L 34,172 L 38,162 L 42,153
+    L 46,144 L 50,136 L 54,128 L 56,120
+    L 55,112 L 53,104 L 52,96 L 54,90
+    L 56,85 L 58,78
     Z
   `;
 
-  // Internal province borders
-  const borders = [
-    // Horizontal divisions
-    "M 62,108 Q 160,130 260,115 Q 350,100 408,115",
-    "M 52,172 Q 150,195 250,180 Q 340,168 416,170",
-    "M 10,198 Q 80,230 160,260 Q 260,275 416,285",
-    "M 105,385 Q 200,370 300,380 Q 380,388 416,390",
-    "M 138,475 Q 230,460 320,470 Q 380,478 415,490",
-
-    // Vertical divisions
-    "M 278,18 Q 275,100 270,180 Q 268,280 270,380 Q 275,480 282,578",
-    "M 180,46 Q 178,130 175,200 Q 172,300 175,400 Q 178,500 175,540",
-    "M 370,20 Q 365,100 360,200 Q 358,300 360,400 Q 365,480 392,530",
-
-    // Diagonal connectors
-    "M 260,115 Q 240,148 220,180",
-    "M 270,280 Q 310,320 340,365",
-    "M 175,200 Q 140,240 120,280",
+  // Rivers for geographic detail
+  const rivers = [
+    // Rio Chicamocha (runs through central canyon)
+    "M 340,78 Q 310,130 280,175 Q 250,220 220,270 Q 190,310 160,360",
+    // Rio Suárez (south-central)
+    "M 180,360 Q 165,400 150,440 Q 135,475 120,508",
+    // Rio Sogamoso (central-west)
+    "M 250,180 Q 200,190 150,200 Q 100,215 50,230",
+    // Rio Magdalena (western boundary hint)
+    "M 58,78 Q 45,130 35,180 Q 25,240 20,300",
   ];
 
-  // Rivers
-  const rivers = [
-    // Río Chicamocha — runs through western canyons
-    "M 350,70 Q 300,130 260,180 Q 200,240 140,310 Q 100,360 68,400",
-    // Río Suárez
-    "M 200,400 Q 220,460 240,520 Q 260,555 282,578",
-    // Río Sogamoso
-    "M 260,180 Q 200,190 140,210 Q 80,230 30,250",
+  // Internal province divisions (simplified)
+  const divisions = [
+    "M 18,242 Q 120,235 220,230 Q 300,225 375,242",
+    "M 50,372 Q 140,365 230,360 Q 290,358 338,352",
+    "M 200,10 Q 198,100 195,200 Q 192,300 190,400 Q 188,450 184,460",
+    "M 300,44 Q 295,130 290,220 Q 285,310 280,400",
+  ];
+
+  // City positions based on real geographic coordinates
+  const cities: { x: number; y: number; name: string; capital?: boolean }[] = [
+    { x: 262, y: 140, name: "BUCARAMANGA", capital: true },
+    { x: 275, y: 152, name: "FLORIDABLANCA" },
+    { x: 248, y: 148, name: "GIRÓN" },
+    { x: 280, y: 165, name: "PIEDECUESTA" },
+    { x: 93, y: 158, name: "B/BERMEJA" },
+    { x: 258, y: 300, name: "SAN GIL" },
+    { x: 230, y: 320, name: "SOCORRO" },
+    { x: 340, y: 258, name: "MÁLAGA" },
+    { x: 135, y: 454, name: "VÉLEZ" },
+    { x: 150, y: 438, name: "BARBOSA" },
+    { x: 242, y: 42, name: "EL PLAYÓN" },
+    { x: 250, y: 62, name: "RIONEGRO" },
+    { x: 220, y: 105, name: "LEBRIJA" },
+    { x: 165, y: 235, name: "SAN VICENTE" },
+    { x: 55, y: 370, name: "CIMITARRA" },
+    { x: 218, y: 275, name: "ZAPATOCA" },
   ];
 
   return (
-    <svg viewBox="-5 -5 440 600" style={{ width: '90%', height: '90%' }}
-      fill="none" stroke="#14F814" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="-5 -5 395 550" style={{ width: '88%', height: '92%' }}
+      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
 
-      {/* ── Department outline ── */}
+      {/* Department outline */}
       <path d={outline}
         strokeWidth="2"
-        fill="rgba(20,248,20,0.04)"
+        fill="rgba(20,248,20,0.03)"
         strokeLinejoin="round"
         strokeLinecap="round"
+        style={{ filter: `drop-shadow(0 0 3px ${GREEN})` }}
       />
 
-      {/* ── Internal province borders ── */}
-      <g strokeWidth="0.6" opacity="0.35" strokeDasharray="4 3">
-        {borders.map((d, i) => <path key={i} d={d} />)}
+      {/* Internal province divisions */}
+      <g strokeWidth="0.5" opacity="0.2" strokeDasharray="4 3">
+        {divisions.map((d, i) => <path key={`div-${i}`} d={d} />)}
       </g>
 
-      {/* ── Rivers ── */}
-      <g strokeWidth="1" opacity="0.25" strokeDasharray="6 4" strokeLinecap="round">
-        {rivers.map((d, i) => <path key={i} d={d} />)}
+      {/* Rivers */}
+      <g strokeWidth="0.8" opacity="0.2" strokeDasharray="6 4" strokeLinecap="round">
+        {rivers.map((d, i) => <path key={`riv-${i}`} d={d} />)}
       </g>
 
-      {/* ── Topographic contours ── */}
-      <g strokeWidth="0.4" opacity="0.12">
-        <ellipse cx="300" cy="120" rx="55" ry="30" />
-        <ellipse cx="300" cy="120" rx="38" ry="20" />
-        <ellipse cx="300" cy="120" rx="20" ry="10" />
-
-        <ellipse cx="200" cy="350" rx="45" ry="35" />
-        <ellipse cx="200" cy="350" rx="28" ry="20" />
-
-        <ellipse cx="340" cy="430" rx="40" ry="28" />
-        <ellipse cx="340" cy="430" rx="22" ry="14" />
+      {/* Topographic contours */}
+      <g strokeWidth="0.3" opacity="0.1">
+        <ellipse cx="280" cy="140" rx="40" ry="22" />
+        <ellipse cx="280" cy="140" rx="25" ry="14" />
+        <ellipse cx="250" cy="300" rx="35" ry="25" />
+        <ellipse cx="250" cy="300" rx="20" ry="14" />
+        <ellipse cx="340" cy="260" rx="25" ry="18" />
       </g>
 
-      {/* ── Elevation labels ── */}
-      <text x="278" y="115" fontSize="6.5" fill="#14F814" stroke="none" opacity="0.45">3.200m</text>
-      <text x="178" y="345" fontSize="6" fill="#14F814" stroke="none" opacity="0.35">1.800m</text>
-      <text x="322" y="425" fontSize="6" fill="#14F814" stroke="none" opacity="0.35">2.400m</text>
+      {/* City markers */}
+      {cities.map((city, i) => (
+        <g key={`city-${i}`}>
+          {city.capital ? (
+            <>
+              {/* Pulsing marker for capital */}
+              <circle cx={city.x} cy={city.y} r="5" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
+                <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={city.x} cy={city.y} r="3" fill={GREEN} stroke="none" />
+              <text x={city.x + 8} y={city.y + 3} fontSize="8" fill={GREEN} stroke="none"
+                fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }}>
+                {city.name}
+              </text>
+            </>
+          ) : (
+            <>
+              <circle cx={city.x} cy={city.y} r="2.5" fill="rgba(20,248,20,0.25)" stroke={GREEN} strokeWidth="0.8" />
+              <text x={city.x + 5} y={city.y + 3} fontSize="5.5" fill={GREEN} stroke="none" opacity="0.55">
+                {city.name}
+              </text>
+            </>
+          )}
+        </g>
+      ))}
 
-      {/* ── Compass Rose ── */}
-      <g transform="translate(400, 555)" opacity="0.45">
-        <line x1="0" y1="-16" x2="0" y2="16" strokeWidth="1" />
-        <line x1="-16" y1="0" x2="16" y2="0" strokeWidth="1" />
-        <line x1="-10" y1="-10" x2="10" y2="10" strokeWidth="0.5" />
-        <line x1="10" y1="-10" x2="-10" y2="10" strokeWidth="0.5" />
-        <text x="-3" y="-20" fontSize="8" fill="#14F814" stroke="none" fontWeight="bold">N</text>
-        <text x="-3" y="26" fontSize="6" fill="#14F814" stroke="none">S</text>
-        <text x="20" y="3" fontSize="6" fill="#14F814" stroke="none">E</text>
-        <text x="-25" y="3" fontSize="6" fill="#14F814" stroke="none">W</text>
-        <circle cx="0" cy="0" r="3" strokeWidth="1" fill="rgba(20,248,20,0.2)" />
+      {/* Elevation labels */}
+      <text x="260" y="130" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">3.200m</text>
+      <text x="320" y="250" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">2.800m</text>
+      <text x="230" y="290" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">1.600m</text>
+
+      {/* Compass Rose */}
+      <g transform="translate(355, 510)" opacity="0.4">
+        <line x1="0" y1="-14" x2="0" y2="14" strokeWidth="0.8" />
+        <line x1="-14" y1="0" x2="14" y2="0" strokeWidth="0.8" />
+        <line x1="-9" y1="-9" x2="9" y2="9" strokeWidth="0.4" />
+        <line x1="9" y1="-9" x2="-9" y2="9" strokeWidth="0.4" />
+        <text x="-3" y="-18" fontSize="7" fill={GREEN} stroke="none" fontWeight="bold">N</text>
+        <text x="-2" y="24" fontSize="5" fill={GREEN} stroke="none">S</text>
+        <text x="18" y="2" fontSize="5" fill={GREEN} stroke="none">E</text>
+        <text x="-22" y="2" fontSize="5" fill={GREEN} stroke="none">W</text>
+        <circle cx="0" cy="0" r="2.5" strokeWidth="0.8" fill="rgba(20,248,20,0.2)" />
       </g>
 
-      {/* ── Scale bar ── */}
-      <g transform="translate(15, 575)" opacity="0.35">
-        <line x1="0" y1="0" x2="70" y2="0" strokeWidth="1" />
-        <line x1="0" y1="-3" x2="0" y2="3" strokeWidth="1" />
-        <line x1="35" y1="-2" x2="35" y2="2" strokeWidth="0.7" />
-        <line x1="70" y1="-3" x2="70" y2="3" strokeWidth="1" />
-        <text x="0" y="10" fontSize="5.5" fill="#14F814" stroke="none">0</text>
-        <text x="26" y="10" fontSize="5.5" fill="#14F814" stroke="none">50km</text>
-        <text x="55" y="10" fontSize="5.5" fill="#14F814" stroke="none">100km</text>
+      {/* Scale bar */}
+      <g transform="translate(12, 535)" opacity="0.3">
+        <line x1="0" y1="0" x2="60" y2="0" strokeWidth="0.8" />
+        <line x1="0" y1="-3" x2="0" y2="3" strokeWidth="0.8" />
+        <line x1="30" y1="-2" x2="30" y2="2" strokeWidth="0.5" />
+        <line x1="60" y1="-3" x2="60" y2="3" strokeWidth="0.8" />
+        <text x="0" y="9" fontSize="5" fill={GREEN} stroke="none">0</text>
+        <text x="22" y="9" fontSize="5" fill={GREEN} stroke="none">50km</text>
+        <text x="48" y="9" fontSize="5" fill={GREEN} stroke="none">100km</text>
       </g>
     </svg>
   );

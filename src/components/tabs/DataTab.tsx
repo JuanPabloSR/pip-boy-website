@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import walkGif from '../../assets/derek-walk.gif';
+import VaultBoyDisplay from '../VaultBoyDisplay';
 import { soundEffects } from '../../utils/audio';
 
 const GREEN = '#14F814';
@@ -145,17 +146,7 @@ export default function DataTab() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-              <img 
-                src={walkGif} 
-                alt="Vault Boy"
-                style={{ 
-                  width: 120, 
-                  height: 120, 
-                  objectFit: 'contain',
-                  mixBlendMode: 'screen',
-                  filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)'
-                }} 
-              />
+              <VaultBoyDisplay src={walkGif} size={120} />
             </div>
 
             <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(20,248,20,0.3)', paddingTop: '0.75rem' }}>

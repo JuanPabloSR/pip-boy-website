@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import thumbsUpGif from '../../assets/correct-thumbs-up.gif';
+import VaultBoyDisplay from '../VaultBoyDisplay';
 import { soundEffects } from '../../utils/audio';
 
 const GREEN = '#14F814';
@@ -152,17 +153,7 @@ export default function InvTab() {
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-              <img 
-                src={thumbsUpGif} 
-                alt="Vault Boy"
-                style={{ 
-                  width: 140, 
-                  height: 140, 
-                  objectFit: 'contain',
-                  mixBlendMode: 'screen',
-                  filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)'
-                }} 
-              />
+              <VaultBoyDisplay src={thumbsUpGif} size={140} />
             </div>
 
             <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(20,248,20,0.3)', paddingTop: '0.75rem', display: 'flex', gap: '2rem', fontSize: '1rem' }}>

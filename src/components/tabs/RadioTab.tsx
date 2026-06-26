@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import gamingGif from '../../assets/gaming.gif';
+import danceGif from '../../assets/vaultboy-dance.gif';
+import VaultBoyDisplay from '../VaultBoyDisplay';
 import { useAudio } from '../../App';
 import { soundEffects } from '../../utils/audio';
 
@@ -93,22 +94,14 @@ export default function RadioTab() {
         const idx = STATIONS.findIndex(s => s.id === selected.id);
         if (idx > 0) {
           const next = STATIONS[idx - 1];
-          setSelected(next);
-          setNeedle(next.signal);
-          setCurrentStation(next.audioSrc);
-          setPlaying(true);
-          soundEffects.hover();
+          tuneStation(next);
         }
       } else if (key === 's' || e.key === 'ArrowDown') {
         e.preventDefault();
         const idx = STATIONS.findIndex(s => s.id === selected.id);
         if (idx < STATIONS.length - 1) {
           const next = STATIONS[idx + 1];
-          setSelected(next);
-          setNeedle(next.signal);
-          setCurrentStation(next.audioSrc);
-          setPlaying(true);
-          soundEffects.hover();
+          tuneStation(next);
         }
       }
     };
@@ -117,11 +110,11 @@ export default function RadioTab() {
   }, [selected.id, setCurrentStation, setPlaying]);
 
   const tuneStation = (station: typeof STATIONS[0]) => {
+    soundEffects.radioStatic(0.25, 0.15);
     setSelected(station);
     setNeedle(station.signal);
     setCurrentStation(station.audioSrc);
     setPlaying(true);
-    soundEffects.hover();
   };
 
   const btnStyle: React.CSSProperties = {
@@ -139,17 +132,7 @@ export default function RadioTab() {
       <div style={{ border: `1px solid ${GREEN}`, padding: '1rem', boxShadow: `0 0 8px rgba(20,248,20,0.15)`, position: 'relative' }}>
         
         <div style={{ position: 'absolute', right: '1rem', top: '1rem', opacity: 0.8 }}>
-          <img 
-            src={gamingGif} 
-            alt="Vault Boy Gaming"
-            style={{ 
-              width: 70, 
-              height: 70, 
-              objectFit: 'contain',
-              mixBlendMode: 'screen',
-              filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)'
-            }} 
-          />
+          <VaultBoyDisplay src={danceGif} size={70} />
         </div>
 
         <div style={{ fontSize: '0.78rem', opacity: 0.4, marginBottom: '0.5rem', letterSpacing: '2px' }}>// SINTONIZADOR DE FRECUENCIAS</div>
