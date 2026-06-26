@@ -1,10 +1,64 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { geoMercator, geoPath } from 'd3-geo';
+import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
 import walkGif from '../../assets/derek-walk.gif';
-import VaultBoyDisplay from '../VaultBoyDisplay';
+import santanderData from '../../assets/santander.geo.json';
+import colombiaData from '../../assets/colombia.geo.json';
 
 const GREEN = '#14F814';
+const WIDTH = 380;
+const HEIGHT = 540;
+const ZOOM_SCALE = 4.2; // ratio between Santander and Colombia projections
+const TRANSITION = { duration: 1.8, ease: [0.4, 0, 0.2, 1] as const };
+
+// Santander cities [lon, lat]
+const santanderCities: CityDef[] = [
+  { name: 'BUCARAMANGA', coords: [-73.1198, 7.1254], capital: true },
+  { name: 'FLORIDABLANCA', coords: [-73.0864, 7.0622] },
+  { name: 'GIRÓN', coords: [-73.1710, 7.0684] },
+  { name: 'PIEDECUESTA', coords: [-73.0505, 6.9872] },
+  { name: 'B/BERMEJA', coords: [-73.8549, 7.0653] },
+  { name: 'SAN GIL', coords: [-73.1347, 6.5544] },
+  { name: 'SOCORRO', coords: [-73.2614, 6.4700] },
+  { name: 'MÁLAGA', coords: [-72.7334, 6.7044] },
+  { name: 'VÉLEZ', coords: [-73.6734, 6.0131] },
+  { name: 'BARBOSA', coords: [-73.6143, 5.9317] },
+  { name: 'EL PLAYÓN', coords: [-73.2050, 7.4700] },
+  { name: 'RIONEGRO', coords: [-73.1543, 7.3821] },
+  { name: 'LEBRIJA', coords: [-73.2161, 7.1145] },
+  { name: 'SAN VICENTE', coords: [-73.4244, 6.8839] },
+  { name: 'CIMITARRA', coords: [-73.9507, 6.3167] },
+  { name: 'ZAPATOCA', coords: [-73.2690, 6.8138] },
+  { name: 'BARICHARA', coords: [-73.2258, 6.6356] },
+];
+
+interface CityDef {
+  name: string;
+  coords: [number, number];
+  capital?: boolean;
+}
+
+type MapView = 'santander' | 'colombia';
 
 export default function MapTab() {
+  const [view, setView] = useState<MapView>('santander');
+
+  // Santander centroid in Colombia map pixel-space (% for transform-origin)
+  const santanderOrigin = useMemo(() => {
+    const projection = geoMercator().center([-74.0, 4.5]).scale(2400).translate([WIDTH / 2, HEIGHT / 2]);
+    const collection = colombiaData as unknown as FeatureCollection<Polygon | MultiPolygon>;
+    const feat = collection.features.find(f => (f.properties as { DPTO: string }).DPTO === '68');
+    if (feat) {
+      const c = geoPath().projection(projection).centroid(feat);
+      return `${(c[0] / WIDTH) * 100}% ${(c[1] / HEIGHT) * 100}%`;
+    }
+    return '55% 35%';
+  }, []);
+
+  const toggle = () => setView(v => v === 'santander' ? 'colombia' : 'santander');
+  const isSantander = view === 'santander';
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       style={{ display: 'flex', gap: '2rem', height: '100%', overflow: 'hidden' }}>
@@ -33,7 +87,7 @@ export default function MapTab() {
         </div>
       </div>
 
-      {/* Right: SVG Santander Map */}
+      {/* Right: Map container */}
       <div style={{
         flex: 1.4, border: `1px solid rgba(20,248,20,0.35)`, position: 'relative',
         overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -47,21 +101,260 @@ export default function MapTab() {
           pointerEvents: 'none',
         }} />
 
-        <SantanderMap />
+        {/* Map switcher arrows */}
+        <button onClick={toggle} style={arrowStyle('left')} aria-label="Previous map">◄</button>
+        <button onClick={toggle} style={arrowStyle('right')} aria-label="Next map">►</button>
+
+        {/* Map label */}
+        <motion.span
+          key={view}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          transition={{ duration: 0.6, delay: 1.2 }}
+          style={{
+            position: 'absolute', top: '6px', left: '50%', transform: 'translateX(-50%)',
+            fontSize: '0.7rem', letterSpacing: '2px', zIndex: 5,
+          }}>
+          {isSantander ? 'DPTO. SANTANDER' : 'REPÚBLICA DE COLOMBIA'}
+        </motion.span>
+
+        {/* ─── Layered maps with zoom transition ─── */}
+        {/* Colombia layer */}
+        <motion.div
+          animate={{
+            scale: isSantander ? ZOOM_SCALE : 1,
+            opacity: isSantander ? 0 : 1,
+          }}
+          transition={TRANSITION}
+          style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transformOrigin: santanderOrigin,
+            pointerEvents: isSantander ? 'none' : 'auto',
+          }}
+        >
+          <ColombiaMapSVG />
+        </motion.div>
+
+        {/* Santander layer */}
+        <motion.div
+          animate={{
+            scale: isSantander ? 1 : 1 / ZOOM_SCALE,
+            opacity: isSantander ? 1 : 0,
+          }}
+          transition={TRANSITION}
+          style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transformOrigin: 'center center',
+            pointerEvents: isSantander ? 'auto' : 'none',
+          }}
+        >
+          <SantanderMapSVG />
+        </motion.div>
+
+        {/* Edge fade vignette during transition */}
+        <motion.div
+          animate={{ opacity: isSantander ? 0 : 0 }}
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            boxShadow: `inset 0 0 40px 15px rgba(0,0,0,0.8)`,
+          }}
+        />
 
         {/* Vault Boy */}
-        <div style={{ position: 'absolute', bottom: '8px', left: '8px' }}>
-          <VaultBoyDisplay src={walkGif} size={75} />
-        </div>
+        <img
+          src={walkGif}
+          alt="Vault Boy"
+          style={{
+            position: 'absolute', bottom: '8px', left: '8px',
+            width: 75, height: 75, objectFit: 'contain',
+            mixBlendMode: 'screen',
+            filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)',
+            opacity: 0.9, zIndex: 5,
+          }}
+        />
 
         {/* Corner labels */}
-        <span style={{ position: 'absolute', top: '6px', left: '8px', fontSize: '0.62rem', opacity: 0.4 }}>N 8°09'</span>
-        <span style={{ position: 'absolute', bottom: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4 }}>W 73°38'</span>
-        <span style={{ position: 'absolute', top: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4 }}>DPTO. SANTANDER</span>
-        <span style={{ position: 'absolute', bottom: '6px', left: '85px', fontSize: '0.6rem', opacity: 0.25, letterSpacing: '1px' }}>VAULT-TEC CARTOGRAPHY v3.2</span>
+        <span style={{ position: 'absolute', top: '6px', left: '8px', fontSize: '0.62rem', opacity: 0.4, zIndex: 5 }}>
+          {isSantander ? 'N 8°07\'' : 'N 12°27\''}
+        </span>
+        <span style={{ position: 'absolute', bottom: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4, zIndex: 5 }}>
+          {isSantander ? 'W 73°32\'' : 'W 74°00\''}
+        </span>
+        <span style={{ position: 'absolute', bottom: '6px', left: '85px', fontSize: '0.6rem', opacity: 0.25, letterSpacing: '1px', zIndex: 5 }}>VAULT-TEC CARTOGRAPHY v3.2</span>
+
+        {/* Page indicator */}
+        <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: isSantander ? GREEN : 'transparent', border: `1px solid ${GREEN}`, transition: 'background 0.3s' }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: !isSantander ? GREEN : 'transparent', border: `1px solid ${GREEN}`, transition: 'background 0.3s' }} />
+        </div>
       </div>
     </motion.div>
   );
+}
+
+// Santander map using real GeoJSON + d3-geo
+function SantanderMapSVG() {
+  const { pathD, projectedCities } = useMemo(() => {
+    const projection = geoMercator()
+      .center([-73.5, 6.9])
+      .scale(10000)
+      .translate([WIDTH / 2, HEIGHT / 2]);
+
+    const pathGen = geoPath().projection(projection);
+    const feature = santanderData as unknown as Feature<Polygon>;
+    const d = pathGen(feature) || '';
+
+    const projected = santanderCities.map(city => {
+      const point = projection(city.coords);
+      return { ...city, x: point?.[0] ?? 0, y: point?.[1] ?? 0 };
+    });
+
+    return { pathD: d, projectedCities: projected };
+  }, []);
+
+  return (
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '88%', height: '88%' }}
+      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
+      <path d={pathD} strokeWidth="2" fill="rgba(20,248,20,0.03)"
+        strokeLinejoin="round" strokeLinecap="round"
+        style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }} />
+
+      {projectedCities.map((city, i) => (
+        <g key={i}>
+          {city.capital ? (
+            <>
+              <circle cx={city.x} cy={city.y} r="5" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
+                <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={city.x} cy={city.y} r="3" fill={GREEN} stroke="none" />
+              <text x={city.x + 9} y={city.y + 3} fontSize="8" fill={GREEN} stroke="none"
+                fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }}>
+                {city.name}
+              </text>
+            </>
+          ) : (
+            <>
+              <circle cx={city.x} cy={city.y} r="2.5" fill="rgba(20,248,20,0.25)" stroke={GREEN} strokeWidth="0.8" />
+              <text x={city.x + 5} y={city.y + 3} fontSize="5.5" fill={GREEN} stroke="none" opacity="0.6">
+                {city.name}
+              </text>
+            </>
+          )}
+        </g>
+      ))}
+
+      <MapExtras />
+    </svg>
+  );
+}
+
+// Colombia map - all departments, Santander highlighted
+function ColombiaMapSVG() {
+  const { departments, santanderCenter } = useMemo(() => {
+    const projection = geoMercator()
+      .center([-74.0, 4.5])
+      .scale(2400)
+      .translate([WIDTH / 2, HEIGHT / 2]);
+
+    const pathGen = geoPath().projection(projection);
+    const collection = colombiaData as unknown as FeatureCollection<Polygon | MultiPolygon>;
+
+    const deps = collection.features.map(f => ({
+      d: pathGen(f) || '',
+      isSantander: (f.properties as { DPTO: string }).DPTO === '68',
+      name: (f.properties as { NAME: string }).NAME,
+    }));
+
+    const santFeature = collection.features.find(f => (f.properties as { DPTO: string }).DPTO === '68');
+    let center: [number, number] = [0, 0];
+    if (santFeature) {
+      const centroid = geoPath().projection(projection).centroid(santFeature);
+      center = [centroid[0], centroid[1]];
+    }
+
+    return { departments: deps, santanderCenter: center };
+  }, []);
+
+  return (
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '88%', height: '88%' }}
+      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
+
+      {departments.map((dep, i) => (
+        <path key={i} d={dep.d}
+          strokeWidth={dep.isSantander ? '2' : '0.6'}
+          fill={dep.isSantander ? 'rgba(20,248,20,0.12)' : 'rgba(20,248,20,0.02)'}
+          opacity={dep.isSantander ? 1 : 0.5}
+          strokeLinejoin="round" strokeLinecap="round"
+          style={dep.isSantander ? { filter: `drop-shadow(0 0 6px ${GREEN})` } : undefined}
+        />
+      ))}
+
+      {/* Santander pulsing marker */}
+      <circle cx={santanderCenter[0]} cy={santanderCenter[1]} r="6" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
+        <animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={santanderCenter[0]} cy={santanderCenter[1]} r="4" fill={GREEN} stroke="none" />
+      <text x={santanderCenter[0] + 10} y={santanderCenter[1] + 4} fontSize="9" fill={GREEN} stroke="none"
+        fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 5px ${GREEN})` }}>
+        SANTANDER
+      </text>
+
+      <MapExtras />
+    </svg>
+  );
+}
+
+// Shared decorative elements
+function MapExtras() {
+  return (
+    <>
+      {/* Compass Rose */}
+      <g transform={`translate(${WIDTH - 30}, ${HEIGHT - 40})`} opacity="0.4">
+        <line x1="0" y1="-14" x2="0" y2="14" strokeWidth="0.8" />
+        <line x1="-14" y1="0" x2="14" y2="0" strokeWidth="0.8" />
+        <line x1="-9" y1="-9" x2="9" y2="9" strokeWidth="0.4" />
+        <line x1="9" y1="-9" x2="-9" y2="9" strokeWidth="0.4" />
+        <text x="-3" y="-18" fontSize="7" fill={GREEN} stroke="none" fontWeight="bold">N</text>
+        <text x="-2" y="24" fontSize="5" fill={GREEN} stroke="none">S</text>
+        <text x="18" y="2" fontSize="5" fill={GREEN} stroke="none">E</text>
+        <text x="-22" y="2" fontSize="5" fill={GREEN} stroke="none">W</text>
+        <circle cx="0" cy="0" r="2.5" strokeWidth="0.8" fill="rgba(20,248,20,0.2)" />
+      </g>
+
+      {/* Scale bar */}
+      <g transform="translate(12, 525)" opacity="0.3">
+        <line x1="0" y1="0" x2="60" y2="0" strokeWidth="0.8" />
+        <line x1="0" y1="-3" x2="0" y2="3" strokeWidth="0.8" />
+        <line x1="30" y1="-2" x2="30" y2="2" strokeWidth="0.5" />
+        <line x1="60" y1="-3" x2="60" y2="3" strokeWidth="0.8" />
+        <text x="0" y="9" fontSize="5" fill={GREEN} stroke="none">0</text>
+        <text x="22" y="9" fontSize="5" fill={GREEN} stroke="none">50km</text>
+        <text x="48" y="9" fontSize="5" fill={GREEN} stroke="none">100km</text>
+      </g>
+    </>
+  );
+}
+
+function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
+  return {
+    position: 'absolute',
+    [side]: '6px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'rgba(0,0,0,0.6)',
+    border: `1px solid ${GREEN}`,
+    color: GREEN,
+    fontSize: '1rem',
+    padding: '8px 6px',
+    cursor: 'pointer',
+    zIndex: 10,
+    lineHeight: 1,
+    textShadow: `0 0 6px ${GREEN}`,
+  };
 }
 
 function WaypointCard({ icon, label, value, sub, link }: { icon: string; label: string; value: string; sub?: string; link?: string }) {
@@ -84,175 +377,4 @@ function WaypointCard({ icon, label, value, sub, link }: { icon: string; label: 
   );
   if (link) return <a href={link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>{card}</a>;
   return card;
-}
-
-// Accurate Santander (Colombia) outline based on real geographic boundaries
-// Coordinate system: x = longitude mapped, y = latitude mapped (inverted)
-// Bounds: lat 5.82-7.58, lon -74.20 to -72.68
-function SantanderMap() {
-  // Accurate outline of Santander traced from geographic boundaries
-  // Clockwise from northwest corner
-  const outline = `
-    M 58,78
-    L 65,72 L 75,65 L 88,58 L 102,52 L 118,46 L 135,40
-    L 152,35 L 168,30 L 182,25 L 195,20 L 208,15 L 220,10
-    L 232,8 L 244,6 L 255,8 L 265,12 L 274,18
-    L 283,25 L 292,34 L 300,44 L 308,52 L 316,58
-    L 324,62 L 332,68 L 340,76 L 346,85 L 350,95
-    L 354,106 L 357,118 L 360,132 L 362,145 L 363,158
-    L 364,170 L 366,182 L 368,194 L 370,206
-    L 372,218 L 374,230 L 375,242 L 376,254 L 375,266
-    L 373,278 L 370,290 L 366,302 L 362,312
-    L 357,322 L 351,332 L 345,342 L 338,352
-    L 330,362 L 322,370 L 313,378 L 304,386
-    L 294,394 L 284,400 L 274,406 L 264,412
-    L 254,418 L 244,424 L 234,430 L 224,436
-    L 214,442 L 204,448 L 194,454 L 184,460
-    L 174,466 L 165,472 L 156,478 L 148,484
-    L 140,490 L 133,496 L 126,502 L 120,508
-    L 115,514 L 111,520 L 108,526 L 106,530
-    L 103,528 L 100,522 L 97,514 L 94,504
-    L 90,492 L 86,480 L 82,468 L 78,456
-    L 74,444 L 70,432 L 66,420 L 62,408
-    L 58,396 L 54,384 L 50,372 L 46,360
-    L 42,348 L 38,336 L 34,325 L 30,314
-    L 27,303 L 24,292 L 22,282 L 20,272
-    L 19,262 L 18,252 L 18,242 L 19,232
-    L 20,222 L 22,212 L 24,202 L 27,192
-    L 30,182 L 34,172 L 38,162 L 42,153
-    L 46,144 L 50,136 L 54,128 L 56,120
-    L 55,112 L 53,104 L 52,96 L 54,90
-    L 56,85 L 58,78
-    Z
-  `;
-
-  // Rivers for geographic detail
-  const rivers = [
-    // Rio Chicamocha (runs through central canyon)
-    "M 340,78 Q 310,130 280,175 Q 250,220 220,270 Q 190,310 160,360",
-    // Rio Suárez (south-central)
-    "M 180,360 Q 165,400 150,440 Q 135,475 120,508",
-    // Rio Sogamoso (central-west)
-    "M 250,180 Q 200,190 150,200 Q 100,215 50,230",
-    // Rio Magdalena (western boundary hint)
-    "M 58,78 Q 45,130 35,180 Q 25,240 20,300",
-  ];
-
-  // Internal province divisions (simplified)
-  const divisions = [
-    "M 18,242 Q 120,235 220,230 Q 300,225 375,242",
-    "M 50,372 Q 140,365 230,360 Q 290,358 338,352",
-    "M 200,10 Q 198,100 195,200 Q 192,300 190,400 Q 188,450 184,460",
-    "M 300,44 Q 295,130 290,220 Q 285,310 280,400",
-  ];
-
-  // City positions based on real geographic coordinates
-  const cities: { x: number; y: number; name: string; capital?: boolean }[] = [
-    { x: 262, y: 140, name: "BUCARAMANGA", capital: true },
-    { x: 275, y: 152, name: "FLORIDABLANCA" },
-    { x: 248, y: 148, name: "GIRÓN" },
-    { x: 280, y: 165, name: "PIEDECUESTA" },
-    { x: 93, y: 158, name: "B/BERMEJA" },
-    { x: 258, y: 300, name: "SAN GIL" },
-    { x: 230, y: 320, name: "SOCORRO" },
-    { x: 340, y: 258, name: "MÁLAGA" },
-    { x: 135, y: 454, name: "VÉLEZ" },
-    { x: 150, y: 438, name: "BARBOSA" },
-    { x: 242, y: 42, name: "EL PLAYÓN" },
-    { x: 250, y: 62, name: "RIONEGRO" },
-    { x: 220, y: 105, name: "LEBRIJA" },
-    { x: 165, y: 235, name: "SAN VICENTE" },
-    { x: 55, y: 370, name: "CIMITARRA" },
-    { x: 218, y: 275, name: "ZAPATOCA" },
-  ];
-
-  return (
-    <svg viewBox="-5 -5 395 550" style={{ width: '88%', height: '92%' }}
-      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
-
-      {/* Department outline */}
-      <path d={outline}
-        strokeWidth="2"
-        fill="rgba(20,248,20,0.03)"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        style={{ filter: `drop-shadow(0 0 3px ${GREEN})` }}
-      />
-
-      {/* Internal province divisions */}
-      <g strokeWidth="0.5" opacity="0.2" strokeDasharray="4 3">
-        {divisions.map((d, i) => <path key={`div-${i}`} d={d} />)}
-      </g>
-
-      {/* Rivers */}
-      <g strokeWidth="0.8" opacity="0.2" strokeDasharray="6 4" strokeLinecap="round">
-        {rivers.map((d, i) => <path key={`riv-${i}`} d={d} />)}
-      </g>
-
-      {/* Topographic contours */}
-      <g strokeWidth="0.3" opacity="0.1">
-        <ellipse cx="280" cy="140" rx="40" ry="22" />
-        <ellipse cx="280" cy="140" rx="25" ry="14" />
-        <ellipse cx="250" cy="300" rx="35" ry="25" />
-        <ellipse cx="250" cy="300" rx="20" ry="14" />
-        <ellipse cx="340" cy="260" rx="25" ry="18" />
-      </g>
-
-      {/* City markers */}
-      {cities.map((city, i) => (
-        <g key={`city-${i}`}>
-          {city.capital ? (
-            <>
-              {/* Pulsing marker for capital */}
-              <circle cx={city.x} cy={city.y} r="5" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
-                <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
-              </circle>
-              <circle cx={city.x} cy={city.y} r="3" fill={GREEN} stroke="none" />
-              <text x={city.x + 8} y={city.y + 3} fontSize="8" fill={GREEN} stroke="none"
-                fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }}>
-                {city.name}
-              </text>
-            </>
-          ) : (
-            <>
-              <circle cx={city.x} cy={city.y} r="2.5" fill="rgba(20,248,20,0.25)" stroke={GREEN} strokeWidth="0.8" />
-              <text x={city.x + 5} y={city.y + 3} fontSize="5.5" fill={GREEN} stroke="none" opacity="0.55">
-                {city.name}
-              </text>
-            </>
-          )}
-        </g>
-      ))}
-
-      {/* Elevation labels */}
-      <text x="260" y="130" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">3.200m</text>
-      <text x="320" y="250" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">2.800m</text>
-      <text x="230" y="290" fontSize="5" fill={GREEN} stroke="none" opacity="0.3">1.600m</text>
-
-      {/* Compass Rose */}
-      <g transform="translate(355, 510)" opacity="0.4">
-        <line x1="0" y1="-14" x2="0" y2="14" strokeWidth="0.8" />
-        <line x1="-14" y1="0" x2="14" y2="0" strokeWidth="0.8" />
-        <line x1="-9" y1="-9" x2="9" y2="9" strokeWidth="0.4" />
-        <line x1="9" y1="-9" x2="-9" y2="9" strokeWidth="0.4" />
-        <text x="-3" y="-18" fontSize="7" fill={GREEN} stroke="none" fontWeight="bold">N</text>
-        <text x="-2" y="24" fontSize="5" fill={GREEN} stroke="none">S</text>
-        <text x="18" y="2" fontSize="5" fill={GREEN} stroke="none">E</text>
-        <text x="-22" y="2" fontSize="5" fill={GREEN} stroke="none">W</text>
-        <circle cx="0" cy="0" r="2.5" strokeWidth="0.8" fill="rgba(20,248,20,0.2)" />
-      </g>
-
-      {/* Scale bar */}
-      <g transform="translate(12, 535)" opacity="0.3">
-        <line x1="0" y1="0" x2="60" y2="0" strokeWidth="0.8" />
-        <line x1="0" y1="-3" x2="0" y2="3" strokeWidth="0.8" />
-        <line x1="30" y1="-2" x2="30" y2="2" strokeWidth="0.5" />
-        <line x1="60" y1="-3" x2="60" y2="3" strokeWidth="0.8" />
-        <text x="0" y="9" fontSize="5" fill={GREEN} stroke="none">0</text>
-        <text x="22" y="9" fontSize="5" fill={GREEN} stroke="none">50km</text>
-        <text x="48" y="9" fontSize="5" fill={GREEN} stroke="none">100km</text>
-      </g>
-    </svg>
-  );
 }
