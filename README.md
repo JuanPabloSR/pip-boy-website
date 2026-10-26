@@ -121,9 +121,10 @@ La imagen de vista previa es `public/og-image.png` (1200×630).
 
 ## Video promocional
 
-En [`promo/`](promo/) está el video de ~48 s en motion graphics que usé para presentar el sitio
-(composición HTML determinista renderizada cuadro a cuadro + banda sonora sintetizada por código),
-junto con el texto de la publicación. Las instrucciones para regenerarlo están en [`promo/README.md`](promo/README.md).
+En [`promo/`](promo/) está el video de ~48 s en motion graphics que usé para presentar el sitio,
+en horizontal (16:9), para el feed de LinkedIn (4:5) y para Reels (9:16). Es una composición HTML
+determinista renderizada cuadro a cuadro con una banda sonora sintetizada por código, y ahí también
+está el texto de las publicaciones. Las instrucciones para regenerarlo están en [`promo/README.md`](promo/README.md).
 
 ## Stack
 

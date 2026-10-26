@@ -1,4 +1,9 @@
-# Publicación de LinkedIn
+# Publicaciones (LinkedIn e Instagram)
+
+Videos: `pipboy-promo-4x5.mp4` para LinkedIn y `pipboy-promo-9x16.mp4` para Instagram Reels
+(`pipboy-promo.mp4`, horizontal, para YouTube o la web).
+
+# LinkedIn
 
 ## Texto (español)
 
@@ -25,7 +30,7 @@ Stack: React 19 · TypeScript · Vite · Framer Motion · d3-geo · Web Audio AP
 
 ## Primer comentario (con el link)
 
-🔗 https://juanpablosr.github.io/pip-boy-website/
+🔗 https://juanpablosanchezdev.com
 Recomendación: ábrela en computador y con audífonos 🎧. Tip: presiona ~ para abrir la terminal.
 
 ---
@@ -51,8 +56,33 @@ Built with React 19, TypeScript, Vite, Framer Motion, d3-geo and the Web Audio A
 ## Consejos para publicar
 
 - Sube el MP4 directamente a LinkedIn (video nativo); no lo enlaces desde otro sitio.
-- Usa `thumbnail.png` como miniatura (LinkedIn permite elegir portada al subir el video).
+- Sube `pipboy-promo-4x5.mp4` y usa `cover-4x5.png` como miniatura (LinkedIn permite elegir portada al subir el video).
 - Pon el link en el primer comentario: LinkedIn suele mostrar menos los posts con links externos en el texto.
 - El video no tiene voz, así que no necesita subtítulos; el texto en pantalla cuenta la historia.
 - Buen horario en Colombia: martes a jueves entre 7:00 y 9:00 a. m. o al mediodía.
 - Opcional, si quieres mencionarlo: "Lo construí con ayuda de IA para iterar más rápido".
+
+---
+
+# Instagram (Reels)
+
+Sube `pipboy-promo-9x16.mp4` como Reel y elige `cover-9x16.png` como portada (en la cuadrícula del
+perfil se ve recortada al centro, por eso el título está en el medio).
+
+## Texto
+
+Mi hoja de vida ahora es un Pip-Boy ☢️🟢
+
+Convertí mi perfil de desarrollador en la interfaz de Fallout 4: mis habilidades son S.P.E.C.I.A.L., mi stack es el inventario, mi experiencia son misiones… y tiene radio con código Morse y una terminal con minijuego de hackeo 💻
+
+¿Cuál es tu Fallout favorito? 👇
+
+🔗 juanpablosanchezdev.com (link en la bio)
+
+#fallout #fallout4 #pipboy #webdeveloper #desarrolloweb #programacion #fullstack #react #typescript #java #springboot #angular #frontend #coding #devlife #colombia
+
+## Consejos
+
+- En Instagram los links del texto no son clicables: pon `juanpablosanchezdev.com` en tu bio (o en un sticker de enlace en una historia que comparta el Reel).
+- La música ya viene en el video y es original, así que no hace falta agregar audio de la biblioteca de Instagram (si lo agregas, baja el volumen original).
+- Comparte el Reel también en tu historia el mismo día.

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pip-Boy promo · vertical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&family=Share+Tech+Mono&display=block" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Vertical tweaks: the "screen" is a tall window cropped from the desktop UI. */
+  .screen { border-radius: 22px; }
+  .view { border-radius: 20px; }
+  .head { width: 940px; white-space: normal; text-align: center; }
+  .low { z-index: 5; padding: 12px 26px; background: rgba(0,0,0,.82); border: 2px solid rgba(20,248,20,.55);
+    font-size: 38px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+  .low small { color: rgba(20,248,20,.7); font-weight: 400; margin-right: 12px; }
+  .boot { font-size: 46px; line-height: 1.55; white-space: pre; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="world"></div>
+  <div id="strip"></div>
+  <div id="scan"></div>
+  <div id="vig"></div>
+  <canvas id="grain" width="540" height="960"></canvas>
+  <div id="flash"></div>
+</div>
+<script>
+'use strict';
+// ?fmt=9x16 (Reels / TikTok / Shorts, 1080x1920) or ?fmt=4x5 (LinkedIn feed, 1080x1350)
+const FMT = new URLSearchParams(location.search).get('fmt') === '4x5' ? '4x5' : '9x16';
+const W = 1080, H = FMT === '4x5' ? 1350 : 1920, CX = W / 2, CY = H / 2;
+const stage = document.getElementById('stage');
+const world = document.getElementById('world');
+const strip = document.getElementById('strip');
+const flashEl = document.getElementById('flash');
+stage.style.width = W + 'px';
+stage.style.height = H + 'px';
+
+/*
+ * Layout per format. Reels draws its header over the top ~250 px and the
+ * username/caption/audio over the bottom ~35 %, plus buttons on the right, so on
+ * 9:16 everything essential stays inside y 250–1270 and a little left of center.
+ */
+const L = FMT === '4x5'
+  ? { win: { cx: 540, cy: 690, w: 960, h: 740 }, kick: 70, head: 158, headSize: 62, low: 1135, rail: 1296, title: 640, sideX: 540 }
+  : { win: { cx: 520, cy: 870, w: 900, h: 800 }, kick: 270, head: 370, headSize: 70, low: 1232, rail: 225, title: 820, sideX: 520 };
+const WIN = L.win;
+</script>
+<script src="engine.js"></script>
+<script>
+'use strict';
+
+// ── Site window (a tall crop of the desktop UI) ────────────────────────────
+const screen = el('div', 'a screen');
+Object.assign(screen.style, { width: WIN.w + 'px', height: WIN.h + 'px' });
+const view = el('div', 'view', screen);
+const cam = el('div', 'cam', view);
+const shotImg = el('img', '', cam);
+const clipCanvas = el('canvas', '', cam);
+clipCanvas.width = 1600; clipCanvas.height = 900;
+el('div', 'glass', screen);
+
+const SCREEN = [
+  { t: 8.0, img: 'shots/stat-status.jpg' },
+  { t: 12.0, clip: 'special-nav', from: 0.15, speed: 1.0 },
+  { t: 15.1, img: 'shots/stat-special-i.jpg' },
+  { t: 16.0, img: 'shots/inv-weapons.jpg' },
+  { t: 17.0, img: 'shots/inv-apparel.jpg' },
+  { t: 18.0, img: 'shots/inv-aid-coffee.jpg' },
+  { t: 19.0, img: 'shots/inv-ammo.jpg' },
+  { t: 20.0, img: 'shots/data-quests.jpg' },
+  { t: 24.0, img: 'shots/map-local.jpg' },
+  { t: 25.2, mix: ['shots/map-local.jpg', 'shots/map-world.jpg'], dur: 0.9 },
+  { t: 26.1, img: 'shots/map-world.jpg' },
+  { t: 32.0, img: 'shots/theme-fo4.jpg' }, { t: 32.5, img: 'shots/theme-fo3.jpg' },
+  { t: 33.0, img: 'shots/theme-nv.jpg' }, { t: 33.5, img: 'shots/theme-vault.jpg' },
+  { t: 34.0, img: 'shots/theme-white.jpg' }, { t: 34.5, img: 'shots/theme-nv.jpg' },
+  { t: 35.0, img: 'shots/theme-vault.jpg' }, { t: 35.5, img: 'shots/theme-fo4.jpg' },
+  { t: 36.0, img: 'shots/terminal.jpg' },
+  { t: 38.0, img: 'shots/hack.jpg' },
+];
+screenFeed(SCREEN, shotImg, clipCanvas);
+
+// The window itself: slams in on the drop, punches on each section, hides for RADIO and MÓVIL.
+const punch = (t, extra = {}) => [{ t: t - 0.001, s: 1.06, br: 1.6, ...extra }, { t: t + 0.35, s: 1, br: 1, e: 'outExpo' }];
+anim(screen, [
+  { t: 7.95, o: 0, s: 1.4, blur: 24, rx: 30, y: 140 },
+  { t: 8.6, o: 1, s: 1, blur: 0, rx: 0, y: 0, e: 'outExpo' },
+  ...punch(12), ...punch(16), ...punch(20), ...punch(24),
+  { t: 27.7, o: 1 }, { t: 28.0, o: 0, s: 0.85, blur: 10, e: 'in' },
+  { t: 31.95, o: 0, s: 1.1, blur: 10 }, { t: 32.3, o: 1, s: 1, blur: 0, br: 1, e: 'outExpo' },
+  ...punch(36),
+  { t: 39.7, o: 1, s: 1 }, { t: 40.0, o: 0, s: 0.8, blur: 12, e: 'in' },
+], { left: WIN.cx, top: WIN.cy });
+
+/** Camera keyframe: center the site point (cx, cy) in the window, showing `rw` site px across. */
+function fit(cx, cy, rw, t, e = 'inOut') {
+  const s = WIN.w / rw;
+  return { t, x: WIN.w / 2 - cx * s, y: WIN.h / 2 - cy * s, s, e };
+}
+anim(cam, [
+  fit(400, 380, 760, 8.0), fit(400, 395, 740, 9.9, 'lin'),
+  fit(1180, 440, 720, 10.5), fit(1180, 450, 700, 11.95, 'lin'),
+  fit(380, 340, 690, 12.0, 'lin'), fit(380, 345, 680, 15.05, 'lin'),
+  fit(1150, 400, 820, 15.1, 'lin'), fit(1150, 405, 800, 15.95, 'lin'),
+  fit(1150, 370, 820, 16.0, 'lin'), fit(1150, 375, 800, 17.0, 'lin'),
+  fit(1150, 370, 820, 17.001, 'lin'), fit(1150, 375, 800, 18.0, 'lin'),
+  fit(1150, 370, 820, 18.001, 'lin'), fit(1150, 375, 800, 19.0, 'lin'),
+  fit(1150, 370, 820, 19.001, 'lin'), fit(1150, 375, 800, 19.95, 'lin'),
+  fit(370, 390, 720, 20.0, 'lin'), fit(370, 400, 700, 21.9, 'lin'),
+  fit(1150, 470, 820, 22.5), fit(1150, 530, 760, 23.95, 'lin'),
+  fit(1090, 470, 700, 24.0, 'lin'), fit(1090, 470, 720, 25.2, 'lin'),
+  fit(1090, 455, 930, 26.4), fit(1090, 455, 900, 27.95, 'lin'),
+  fit(1000, 450, 920, 32.0, 'lin'), fit(1000, 450, 900, 35.95, 'lin'),
+  fit(620, 380, 760, 36.0, 'lin'), fit(640, 380, 720, 37.95, 'lin'),
+  fit(520, 420, 560, 38.0, 'lin'), fit(520, 430, 540, 40.0, 'lin'),
+], { anchor: 'free' });
+
+// ── Text helpers ───────────────────────────────────────────────────────────
+function header(kicker, text, a, b) {
+  block('kicker center', kicker, L.sideX, L.kick, span(a + 0.15, b, 0.35, 0.25, { from: { y: -16 }, to: { y: 0 } }));
+  const h = el('div', 'a h1 glow head');
+  h.style.fontSize = L.headSize + 'px';
+  words(h, text, a + 0.25, { stagger: 0.05, dy: 40, end: b });
+  anim(h, [{ t: 0, o: 1 }], { left: L.sideX, top: L.head + (FMT === '4x5' ? 0 : 20) });
+}
+function lowerThird(html, a, b) {
+  block('low glow', html, L.sideX, L.low, span(a, b, 0.3, 0.2, { from: { y: 30 }, to: { y: 0 }, ein: 'outExpo' }));
+}
+
+// ── Scene 0: CRT power-on + boot text (0 → 3) ───────────────────────────────
+crtPowerOnOff();
+{
+  const lines = [
+    'ROBCO INDUSTRIES (TM)',
+    'TERMLINK PROTOCOL',
+    '> PIP-OS(R) V7.1.0.8',
+    '> CARGANDO PERFIL...',
+    '> JUAN PABLO',
+    '  SÁNCHEZ REY',
+    '> FULL STACK DEV [ OK ]',
+  ];
+  const box = el('div', 'a mono glow boot');
+  Object.assign(box.style, { left: '110px', top: (L.title - 330) + 'px' });
+  anim(box, [{ t: 0, o: 1 }, { t: 2.92, o: 1 }, { t: 3.0, o: 0, e: 'lin' }], { anchor: 'free' });
+  const full = lines.join('\n');
+  updaters.push(t => {
+    if (t > 3.05) return;
+    const p = Math.min(1, Math.max(0, (t - 0.55) / 2.3));
+    box.textContent = full.slice(0, Math.floor(p * full.length)) + (Math.floor(t * 3) % 2 === 0 ? '▌' : ' ');
+  });
+}
+
+// ── Scene 1: kinetic title (3 → 8) ──────────────────────────────────────────
+{
+  const line = (text, top, size, start, end, stagger = 0.07) => {
+    const e = el('div', 'a h1 glow center');
+    e.style.fontSize = size + 'px';
+    words(e, text, start, { stagger, end });
+    anim(e, [{ t: 0, o: 1 }], { top });
+  };
+  const T = L.title;
+  line('HICE MI', T - 180, 170, 3.08, 4.45);
+  line('WEB', T, 170, 3.25, 4.45);
+  line('PERSONAL', T + 180, 170, 3.4, 4.45);
+  line('Y NO ES UN', T - 130, 100, 4.5, 5.55, 0.06);
+  line('PORTAFOLIO', T, 100, 4.65, 5.55);
+  line('CUALQUIERA.', T + 130, 100, 4.8, 5.55);
+  block('h1 center sub', 'ES UN', CX, T - 200, [{ t: 5.6, o: 0, y: 30 }, { t: 5.9, o: 1, y: 0 }, { t: 7.95, o: 1 }, { t: 8.0, o: 0, e: 'lin' }]).style.fontSize = '64px';
+  block('h1 glow center', 'PIP-BOY', CX, T, [
+    { t: 5.75, o: 0, s: 1.6, blur: 30 }, { t: 6.15, o: 1, s: 1, blur: 0, e: 'outExpo' },
+    { t: 7.95, s: 1.1, e: 'in' }, { t: 8.0, o: 0, s: 1.3, e: 'lin' },
+  ]).style.fontSize = '230px';
+  block('mono glow center', '3000 MARK IV', CX, T + 170, [{ t: 6.3, o: 0, y: 20 }, { t: 6.7, o: 1, y: 0 }, { t: 7.95, o: 1 }, { t: 8.0, o: 0, e: 'lin' }]).style.fontSize = '50px';
+  block('mono glow center', 'INSPIRADO EN FALLOUT 4', CX, T + 240, [{ t: 6.5, o: 0, y: 20 }, { t: 6.9, o: 1, y: 0 }, { t: 7.95, o: 1 }, { t: 8.0, o: 0, e: 'lin' }]).style.fontSize = '40px';
+}
+
+// ── Chapter rail with walking Vault Boy (8 → 44) ────────────────────────────
+chapterRail(
+  [[8, 'STAT'], [12, 'SPECIAL'], [16, 'INV'], [20, 'DATA'], [24, 'MAP'], [28, 'RADIO'], [32, 'TEMAS'], [36, 'TERM'], [40, 'MÓVIL']],
+  FMT === '4x5'
+    ? { x0: 70, x1: 1010, railTop: L.rail, labelTop: L.rail + 10, walkerTop: L.rail - 70, walkerH: 66, labelSize: 15 }
+    : { x0: 70, x1: 1010, railTop: L.rail, labelTop: L.rail + 10, walkerTop: L.rail - 76, walkerH: 72, labelSize: 15 },
+);
+
+// ── Sections (8 → 40) ──────────────────────────────────────────────────────
+header('01 · STAT', 'MI FICHA DE MORADOR', 8.3, 12);
+lowerThird('<small>STAT</small>CV EN PDF A UN CLIC', 8.7, 10.3);
+lowerThird('<small>STAT</small>HABILIDADES COMO BARRAS', 10.5, 12);
+
+header('02 · S.P.E.C.I.A.L.', 'CADA ATRIBUTO ES UNA HABILIDAD REAL', 12.0, 16);
+[['S', 'FUERZA → BACKEND JAVA · 9'], ['I', 'INTELIGENCIA → ARQUITECTURA · 9'], ['C', 'CARISMA → COMUNICACIÓN · 8'], ['L', 'SUERTE → IA Y LLMS · 6']]
+  .forEach(([l, txt], i) => lowerThird(`<small>${l}</small>${txt}`, 12.4 + i * 0.9, i === 3 ? 16 : 12.4 + (i + 1) * 0.9));
+
+header('03 · INV', 'MI STACK COMO INVENTARIO', 16.0, 20);
+[['ARMAS', 'JAVA · SPRING BOOT · ANGULAR'], ['ROPA', 'JUNIT · JASMINE · SONARQUBE'], ['AYUDA', 'CAFÉ V60 = NUKA-COLA QUANTUM'], ['MUNICIÓN', 'POSTGRESQL · KAFKA · SQS']]
+  .forEach(([k, v], i) => lowerThird(`<small>${k}</small>${v}`, 16.05 + i, 17 + i));
+
+header('04 · DATA', 'MI EXPERIENCIA COMO MISIONES', 20.0, 24);
+lowerThird('<small>2022 → HOY</small>NEXOS · SOFKA · SENA', 20.4, 22.3);
+lowerThird('<small>DATA</small>OBJETIVOS Y LOGROS', 22.5, 24);
+
+header('05 · MAP', 'DESDE BUCARAMANGA, COLOMBIA', 24.0, 28);
+lowerThird('<small>MAP</small>DATOS GEOGRÁFICOS REALES', 24.4, 28);
+
+// RADIO: a big oscilloscope + the Morse message, synced with the soundtrack
+header('06 · RADIO', 'RADIO DEL YERMO', 28.0, 32);
+lowerThird('<small>RADIO</small>MORSE EN TIEMPO REAL', 28.5, 32);
+{
+  const MORSE = { J: '.---', P: '.--.', S: '...', R: '.-.' };
+  const UNIT = 0.08, START = 28.3;
+  const tones = [];
+  let tt = START;
+  'JPSR'.split('').forEach((ch, ci) => {
+    [...MORSE[ch]].forEach((sym, k) => {
+      const len = (sym === '.' ? 1 : 3) * UNIT;
+      tones.push({ a: tt, b: tt + len, ci });
+      tt += len + (k < MORSE[ch].length - 1 ? UNIT : 0);
+    });
+    tt += 3 * UNIT;
+  });
+  const sw = WIN.w - 40, sh = FMT === '4x5' ? 260 : 320;
+  const scope = block('scopebox', '', WIN.cx, WIN.cy - (FMT === '4x5' ? 150 : 170), span(28.5, 32, 0.4, 0.25, { from: { s: 0.94 }, to: { s: 1 } }));
+  Object.assign(scope.style, { width: sw + 'px', height: sh + 'px' });
+  const cv = el('canvas', '', scope);
+  cv.width = sw; cv.height = sh;
+  Object.assign(cv.style, { position: 'absolute', inset: '0', filter: 'drop-shadow(0 0 6px rgba(20,248,20,.9))' });
+  const ctx = cv.getContext('2d');
+  const letters = block('center', 'JPSR'.split('').map(c => `<span class="letter">${c}</span>`).join(''), WIN.cx, WIN.cy + (FMT === '4x5' ? 90 : 130), span(28.6, 32, 0.4, 0.25));
+  const code = block('mono glow center', '', WIN.cx, WIN.cy + (FMT === '4x5' ? 215 : 280), span(28.6, 32, 0.3, 0.25));
+  code.style.fontSize = '56px';
+  updaters.push(t => {
+    if (t < 28.4 || t > 32) return;
+    const tone = tones.find(m => t >= m.a && t < m.b);
+    ctx.clearRect(0, 0, sw, sh);
+    ctx.strokeStyle = '#14F814';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    const r = mulberry(Math.floor(t * FPS) + 77);
+    for (let px = 0; px <= sw; px += 3) {
+      const u = px / sw;
+      const y = Math.sin(u * Math.PI * 2 * 7 + t * 40) * (tone ? 0.85 : 0) * 0.42 + (r() - 0.5) * (tone ? 0.05 : 0.08);
+      const py = sh / 2 - y * (sh - 30);
+      px === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    const sent = tones.filter(m => m.a <= t);
+    const ci = sent.length ? sent[sent.length - 1].ci : -1;
+    [...letters.children].forEach((l, i) => {
+      l.className = 'letter' + (i < ci ? ' on' : i === ci ? (tone ? ' live' : ' on') : '');
+    });
+    code.textContent = ci >= 0 ? `${'JPSR'[ci]}  ${MORSE['JPSR'[ci]].replace(/\./g, '•').replace(/-/g, '—').split('').join(' ')}` : '';
+  });
+}
+
+// THEMES: the window flashes through the five screen colors on each beat
+header('07 · TEMAS', '5 COLORES DE LA SAGA', 32.0, 36);
+{
+  const THEMES = [
+    ['FALLOUT 4', '#14F814'], ['FALLOUT 3', '#1AFF80'], ['NEW VEGAS', '#FFB642'], ['VAULT-TEC', '#2ECFFF'],
+    ['MK VI', '#DEF2E8'], ['NEW VEGAS', '#FFB642'], ['VAULT-TEC', '#2ECFFF'], ['FALLOUT 4', '#14F814'],
+  ];
+  const label = el('div', 'a h1 center');
+  Object.assign(label.style, { left: WIN.cx + 'px', top: WIN.cy + 'px', fontSize: '150px', visibility: 'hidden' });
+  updaters.push(t => {
+    const on = t >= 32.1 && t < 36;
+    label.style.visibility = on ? 'visible' : 'hidden';
+    shotImg.style.filter = on ? `brightness(${(0.4 + 0.5 * Math.exp(-((t - 32) % 0.5) / 0.08)).toFixed(2)})` : 'none';
+    if (!on) return;
+    const k = Math.min(7, Math.floor((t - 32) / 0.5));
+    const local = (t - 32) - k * 0.5;
+    const [name, color] = THEMES[k];
+    label.textContent = name;
+    label.style.color = color;
+    label.style.textShadow = `0 0 10px ${color}, 0 0 40px ${color}, 0 4px 0 #000`;
+    label.style.transform = `translate(-50%,-50%) scale(${1 + 0.12 * Math.exp(-local / 0.1)})`;
+  });
+}
+
+header('08 · TERMINAL', 'TERMINAL ROBCO + HACKEO', 36.0, 40);
+lowerThird('<small>~</small>AYUDA · SKILLS · CV · HACK', 36.3, 38);
+lowerThird('<small>HACK</small>ADIVINA LA CONTRASEÑA', 38.1, 40);
+
+// ── Scene 10: MOBILE (40 → 44) ─────────────────────────────────────────────
+header('09 · MÓVIL', 'RESPONSIVE · BILINGÜE · ACCESIBLE', 40.0, 44);
+{
+  const ph = FMT === '4x5' ? 640 : 700;
+  const pw = Math.round(ph * 330 / 714);
+  const cy = WIN.cy + (FMT === '4x5' ? 10 : -25);
+  [['m-stat', -290, -8, 0.82], ['m-radio', 290, 8, 0.82], ['m-inv', 0, 0, 1]].forEach(([src, dx, rz, sc], i) => {
+    const p = block('phone', `<img src="shots/${src}.jpg">`, WIN.cx + dx, cy, [
+      { t: 40.15 + i * 0.12, o: 0, y: 500, rz: rz * 2, s: sc }, { t: 40.85 + i * 0.12, o: 1, y: 0, rz, e: 'outExpo' },
+      { t: 43.7, o: 1, y: -16, e: 'lin' }, { t: 44.0, o: 0, y: -60, e: 'in' },
+    ]);
+    Object.assign(p.style, { width: pw + 'px', height: ph + 'px', zIndex: i === 2 ? 3 : 2 });
+  });
+  lowerThird('ES / EN · CV EN PDF · TECLADO + TÁCTIL', 41.0, 44);
+}
+
+// ── Pip-Boy status bar filling the lower band of 9:16 (decorative) ─────────
+if (FMT === '9x16') {
+  const bar = block('', `
+    <div style="display:grid;grid-template-columns:1fr 2.2fr 1fr;gap:6px;width:940px;font-size:30px;letter-spacing:.05em">
+      <div style="background:rgba(20,248,20,.22);padding:10px 16px">PV 115/115</div>
+      <div style="background:rgba(20,248,20,.22);padding:10px 16px;display:flex;align-items:center;gap:14px">NIVEL 26
+        <span style="flex:1;height:16px;border:2px solid var(--g);padding:2px"><i style="display:block;height:100%;width:55%;background:var(--g);box-shadow:0 0 8px var(--g)"></i></span></div>
+      <div style="background:rgba(20,248,20,.22);padding:10px 16px;text-align:right">PA 90/90</div>
+    </div>`, CX, 1560, span(8.3, 44, 0.5, 0.3));
+  bar.classList.add('glow');
+}
+
+// ── Scene 11: END CARD (44 → 48) ───────────────────────────────────────────
+{
+  const top = FMT === '4x5' ? 300 : 515;
+  const vb = el('img', 'a', world);
+  Object.assign(vb.style, { height: (FMT === '4x5' ? 380 : 470) + 'px', filter: 'drop-shadow(0 0 14px rgba(20,248,20,.6))' });
+  anim(vb, [{ t: 43.95, o: 0, s: 0.7, y: 60 }, { t: 44.5, o: 1, s: 1, y: 0, e: 'back' }], { left: CX, top });
+  // frames 0-6 raise the thumb; hold frame 6 instead of returning to neutral
+  vbPlayer(vb, t => (t < 43.9 ? null : `vb/thumbs-up-${String(Math.min(6, Math.max(0, Math.floor((t - 44.15) / 0.1)))).padStart(2, '0')}.png`));
+  const y0 = FMT === '4x5' ? 600 : 860;
+  block('kicker center', 'GRACIAS POR VER · JPSR', CX, y0 - 70, span(44.3, 48, 0.4, 0.01, { from: { y: 20 }, to: { y: 0 } }));
+  const name = (text, y, start) => {
+    const e = el('div', 'a h1 glow center');
+    e.style.fontSize = (FMT === '4x5' ? 96 : 110) + 'px';
+    words(e, text, start, { stagger: 0.08 });
+    anim(e, [{ t: 0, o: 1 }], { top: y });
+  };
+  const gap = FMT === '4x5' ? 92 : 108;
+  name('JUAN PABLO', y0, 44.35);
+  name('SÁNCHEZ REY', y0 + gap, 44.5);
+  block('sub center', 'DESARROLLADOR FULL STACK', CX, y0 + gap * 2, span(44.8, 48, 0.4, 0.01));
+  block('mono center', 'JAVA · SPRING BOOT · ANGULAR', CX, y0 + gap * 2 + 55, span(44.95, 48, 0.4, 0.01)).style.fontSize = '32px';
+  block('pill glow', siteLabel('juanpablosanchezdev.com'), CX, y0 + gap * 2 + 150, span(45.2, 48, 0.4, 0.01, { from: { s: 0.9 }, to: { s: 1 }, ein: 'back' })).style.fontSize = '44px';
+  block('kicker center', '¿QUÉ SECCIÓN TE GUSTÓ MÁS?', CX, y0 + gap * 2 + 245, span(45.6, 48, 0.4, 0.01)).style.fontSize = '28px';
+}
+
+flashesAndGlitches(
+  [[3.0, 0.5], [8.0, 0.9], [16.0, 0.25], [24.0, 0.25], [32.0, 0.5], [36.0, 0.3], [44.0, 0.6]],
+  [[2.95, 0.18], [5.75, 0.12], [7.85, 0.15], [31.85, 0.15], [43.9, 0.12]],
+);
+startDriver(['special-nav']);
+</script>
+</body>
+</html>
