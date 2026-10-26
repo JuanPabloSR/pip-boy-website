@@ -310,11 +310,11 @@ img { display: block; max-width: 100%; }
   font-size: 1.2rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--pip-40);
+  color: var(--pip-70);
   text-shadow: none;
-  transition: color 0.15s;
+  transition: color 0.15s, opacity 0.15s;
 }
-.subtab:hover { color: var(--pip-85); }
+.subtab:hover { color: var(--pip-85); opacity: 1 !important; }
 .subtab[aria-selected='true'] {
   color: var(--pip);
   border-bottom-color: var(--pip);
@@ -929,6 +929,7 @@ a.waypoint:hover, button.waypoint:hover { background: var(--pip-15); }
 }
 .terminal-out .cmd { color: var(--pip); }
 .terminal-out .muted { color: var(--pip-55); }
+.terminal-out .plain { text-transform: none; }
 .terminal-in {
   display: flex;
   align-items: center;

@@ -7,7 +7,8 @@ import { THEMES, type ThemeId } from '../../state/themes';
 import { soundEffects } from '../../utils/audio';
 import Hacking from './Hacking';
 
-type Line = { text: string; kind?: 'cmd' | 'muted' };
+// 'plain' keeps the original case (emails, URLs) inside the all-caps terminal.
+type Line = { text: string; kind?: 'cmd' | 'muted' | 'plain' };
 
 const TEXT = {
   es: {
@@ -182,7 +183,12 @@ export default function Terminal({ startWithHack }: { startWithHack: boolean }) 
       case 'projects':
         return print(...profile.workshops.flatMap(w => [`■ ${w.name.toUpperCase()} [${w.type}]`, `  ${w.description}`, `  ${w.stack.join(' · ')}`, '']));
       case 'contact':
-        return print(`EMAIL ..... ${profile.email}`, `LINKEDIN .. ${profile.linkedin}`, `GITHUB .... ${profile.github}`, `TZ ........ ${profile.timezoneLabel}`);
+        return print(
+          { text: `EMAIL ..... ${profile.email}`, kind: 'plain' },
+          { text: `LINKEDIN .. ${profile.linkedin}`, kind: 'plain' },
+          { text: `GITHUB .... ${profile.github}`, kind: 'plain' },
+          `TZ ........ ${profile.timezoneLabel}`,
+        );
       case 'cv':
         print(tx.printing);
         return printCv();
@@ -260,7 +266,7 @@ export default function Terminal({ startWithHack }: { startWithHack: boolean }) 
     setLines(prev => [
       ...prev,
       ...tx.hackWin.map(text => ({ text })),
-      { text: `  ${profile.email}` },
+      { text: `  ${profile.email}`, kind: 'plain' as const },
       { text: '' },
       { text: tx.perk, kind: 'cmd' as const },
     ]);

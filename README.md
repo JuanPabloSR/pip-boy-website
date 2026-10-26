@@ -1,9 +1,16 @@
 # Pip-Boy 3000 Mk IV · Juan Pablo Sánchez Rey
 
-Portafolio y hoja de vida interactiva con la interfaz del Pip-Boy de **Fallout 4**
-(con guiños a Fallout 3 y New Vegas). Desarrollador Full Stack · Java · Spring Boot · Angular · TypeScript.
+**🟢 En vivo: [juanpablosr.github.io/pip-boy-website](https://juanpablosr.github.io/pip-boy-website/)**
+
+Este es mi sitio personal: mi hoja de vida y mi trayectoria como **Desarrollador Full Stack**
+(Java · Spring Boot · Angular · TypeScript), presentadas dentro de un Pip-Boy de **Fallout 4**
+con guiños a Fallout 3 y New Vegas. Quería que mi presencia en línea tuviera algo de mí,
+no solo una página más con un CV.
 
 ![Vista previa](public/og-image.png)
+
+¿Prefieres lo clásico? En el sitio, el botón **Descargar CV** genera mi hoja de vida en PDF,
+y también está mi [LinkedIn](https://www.linkedin.com/in/juan-pablo-sanchez-rey).
 
 ## Qué hay dentro
 
@@ -37,9 +44,9 @@ Extras:
 | `Enter` | Usar holocinta / sintonizar estación |
 | `~` · `º` | Abrir terminal · `Esc` cierra |
 
-## Editar el contenido
+## Cómo está organizado el contenido
 
-Todo el contenido vive en **`src/data/`**:
+Todo el contenido vive en **`src/data/`**, separado de la interfaz:
 
 - `profile.es.ts` y `profile.en.ts`: perfil, SPECIAL, perks, inventario, misiones, proyectos, radio…
   Ambos cumplen la interfaz de `types.ts`, así que TypeScript avisa si una traducción queda incompleta.
@@ -65,7 +72,7 @@ el sitio los colorea con el color de pantalla activo. Se cargan por nombre, y si
 ### Usar las animaciones originales de Fallout 4
 
 Las animaciones originales del Pip-Boy son propiedad de Bethesda y vienen dentro de los archivos del juego,
-así que no se incluyen aquí. Si tienes el juego puedes extraerlas tú mismo:
+así que no las incluyo en el repositorio. Con una copia del juego se pueden extraer así:
 
 1. Abre `Fallout 4/Data/Fallout4 - Interface.ba2` con **BAE** (Bethesda Archive Extractor) o **Archive2** (Creation Kit) y extrae la carpeta `Interface/`.
 2. Abre con **JPEXS Free Flash Decompiler** los `.swf` de la carpeta `Interface/` que contienen las animaciones de Vault Boy (el menú del Pip-Boy es `PipboyMenu.swf`; las ilustraciones de SPECIAL y perks están en sus propios `.swf`).
@@ -92,10 +99,11 @@ npm run preview
 
 ### Despliegue
 
-El build usa rutas relativas (`base: './'`), así que `dist/` funciona en la raíz de un dominio o en un subdirectorio
-(GitHub Pages, Netlify, Vercel, Cloudflare Pages…).
+El sitio está publicado en **GitHub Pages**. El workflow `.github/workflows/deploy.yml` compila el proyecto
+en cada push a `main` y publica `dist/` en la rama `gh-pages`. Los pull requests pasan por lint y build (`ci.yml`).
 
-Para que las vistas previas al compartir el enlace usen URLs absolutas, define la URL pública antes de compilar:
+El build usa rutas relativas (`base: './'`), así que `dist/` también funciona en la raíz de cualquier dominio
+(Netlify, Vercel, Cloudflare Pages…). Para compilar localmente con URLs absolutas en las vistas previas sociales:
 
 ```bash
 cp .env.example .env   # y edita VITE_SITE_URL
@@ -110,4 +118,6 @@ React 19 · TypeScript · Vite · Framer Motion · d3-geo · Web Audio API · lu
 ---
 
 *Fallout, Pip-Boy, Vault Boy, Vault-Tec y RobCo son marcas de Bethesda Softworks / ZeniMax Media.
-Este es un proyecto personal, sin fines comerciales, hecho por un fan.*
+Este es un proyecto personal, sin fines comerciales, hecho por un fan de la saga.*
+
+Contacto: [juanpablosanchez744@gmail.com](mailto:juanpablosanchez744@gmail.com) · [LinkedIn](https://www.linkedin.com/in/juan-pablo-sanchez-rey)
