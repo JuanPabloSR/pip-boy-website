@@ -27,7 +27,7 @@ Extras:
 - Pantalla de encendido + arranque real de **PIP-OS V7.1.0.8** (se salta con cualquier tecla; solo aparece una vez por sesión).
 - **Terminal RobCo** (tecla `~` / `º` o el botón `>_`) con comandos: `ayuda`, `experiencia`, `skills`, `contacto`, `cv`, `tema nv`, `idioma en`, `radio`, `hack`…
 - **Minijuego de hackeo** de terminales, con recompensa.
-- **CV imprimible / PDF** generado desde los mismos datos (botón *Descargar CV* → "Guardar como PDF").
+- **CV en PDF** (español e inglés) que se descarga directo desde *Descargar CV*, generado a partir de los mismos datos; también se puede imprimir desde ⚙.
 - **Bilingüe** (ES / EN, detecta el idioma del navegador).
 - **Colores de pantalla**: Fallout 4, Fallout 3, New Vegas (ámbar), Vault-Tec (azul) y Mk VI (blanco).
 - Efectos CRT, sonidos sintetizados con Web Audio (se pueden apagar en ⚙), `prefers-reduced-motion` respetado.
@@ -42,6 +42,7 @@ Extras:
 | `A` / `D` · `←` / `→` | Cambiar sub-pestaña |
 | `W` / `S` · `↑` / `↓` | Moverse en la lista |
 | `Enter` | Usar holocinta / sintonizar estación |
+| `C` · `M` · `L` · `G` | En *Estado*: descargar CV, escribirme, LinkedIn, GitHub |
 | `~` · `º` | Abrir terminal · `Esc` cierra |
 
 ## Cómo está organizado el contenido
@@ -54,6 +55,13 @@ Todo el contenido vive en **`src/data/`**, separado de la interfaz:
 - Los textos de la interfaz están en `src/i18n/ui.ts`.
 
 El nivel del Pip-Boy se calcula solo a partir de `careerStart` (sube con el tiempo).
+
+Después de editar el contenido regenero los PDF del CV (`public/cv/`) con:
+
+```bash
+npm run dev          # en otra terminal
+npm run cv:pdf       # requiere Playwright: npm i -D playwright && npx playwright install chromium
+```
 
 ## Animaciones de Vault Boy
 

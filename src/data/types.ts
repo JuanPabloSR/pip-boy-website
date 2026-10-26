@@ -48,7 +48,7 @@ export interface InvItem {
   /** Quantity column, only used for AMMO */
   qty?: number;
   /** Holotapes trigger actions instead of showing stats */
-  action?: 'terminal' | 'hack' | 'print';
+  action?: 'terminal' | 'hack' | 'download';
 }
 
 export type InvCategory = 'weapons' | 'apparel' | 'aid' | 'misc' | 'holo' | 'ammo';
@@ -123,6 +123,7 @@ export interface Profile {
   headline: string;
   location: string;
   timezoneLabel: string;
+  site: string;
   email: string;
   linkedin: string;
   github: string;

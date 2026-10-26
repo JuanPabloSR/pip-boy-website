@@ -51,6 +51,6 @@ export default defineConfig(({ mode }) => {
   return {
     // Relative base: the build works from a domain root or a sub-path (e.g. GitHub Pages).
     base: './',
-    plugins: [react(), seo(env.VITE_SITE_URL ?? '')],
+    plugins: [react(), seo(env.VITE_SITE_URL || profile.site)],
   };
 });

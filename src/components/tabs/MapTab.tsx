@@ -7,7 +7,7 @@ import colombiaData from '../../assets/colombia.geo.json';
 import santanderData from '../../assets/santander.geo.json';
 import type { Waypoint } from '../../data/types';
 import { useListNav } from '../../hooks/useListNav';
-import { useNow } from '../../hooks/useNow';
+import { falloutTime, useNow } from '../../hooks/useNow';
 import { usePip } from '../../state/pip';
 import { soundEffects } from '../../utils/audio';
 import { GithubIcon, LinkedinIcon } from '../Icon';
@@ -100,11 +100,10 @@ export default function MapTab() {
           <button type="button" className="map-arrow" style={{ left: 6 }} onClick={switchMap} aria-label={t.mapUi.prev}>◄</button>
           <button type="button" className="map-arrow" style={{ right: 6 }} onClick={switchMap} aria-label={t.mapUi.next}>►</button>
 
-          <span className="map-label" style={{ top: 8, left: '50%', transform: 'translateX(-50%)' }}>
+          <span className="map-label" style={{ top: 8, left: 10 }}>
             {isLocal ? t.mapUi.santander : t.mapUi.colombia}
           </span>
-          <span className="map-label" style={{ top: 8, left: 10 }}>{isLocal ? "N 8°07'" : "N 12°27'"}</span>
-          <span className="map-label" style={{ bottom: 8, right: 10 }}>{isLocal ? "W 73°32'" : "W 74°00'"}</span>
+          <span className="map-label" style={{ bottom: 8, right: 10 }}>N 7°07' · W 73°07'</span>
 
           {/* World layer zooms into Santander while the local layer zooms out of it */}
           <div role="img" aria-label={isLocal ? t.mapUi.santander : t.mapUi.colombia} style={{ position: 'absolute', inset: 0 }}>
@@ -134,7 +133,7 @@ export default function MapTab() {
           </div>
 
           <div className="map-walker"><VaultBoy name={['map', 'walk-cat']} /></div>
-          <span className="map-label" style={{ bottom: 8, left: '50%', transform: 'translateX(-50%)' }}>{t.mapUi.cartography} v3.2</span>
+          <span className="map-label map-credit" style={{ bottom: 8, left: '50%', transform: 'translateX(-50%)' }}>{t.mapUi.cartography} v3.2</span>
         </div>
       </div>
     </>
@@ -160,8 +159,8 @@ function Marker({ x, y, wp, selected, onSelect, size = 1 }: {
       <circle cx={x} cy={y} r={r} fill="var(--pip)" stroke="none" />
       {selected && <rect x={x - r - 7} y={y - r - 7} width={2 * r + 14} height={2 * r + 14} fill="none" stroke="var(--pip)" strokeWidth={1} strokeDasharray="3 2" />}
       <text x={wp.home ? x + r + 8 : x - r - 8} y={y + 3.5} textAnchor={wp.home ? 'start' : 'end'}
-        fontSize={9 * Math.min(size, 1.1)} fill="var(--pip)" stroke="none" fontWeight={700} letterSpacing={1}
-        style={{ filter: 'drop-shadow(0 0 4px rgb(var(--pip-rgb) / 0.8))' }}>
+        fontSize={12 * Math.min(size, 1.1)} fill="var(--pip)" stroke="#000" strokeWidth={3} paintOrder="stroke"
+        fontWeight={700} letterSpacing={1}>
         {wp.name.toUpperCase()}
       </text>
       <circle cx={x} cy={y} r={14} fill="transparent" stroke="none" />
@@ -186,9 +185,12 @@ function LocalMap({ waypoints, selectedId, onSelect }: MapProps) {
     return {
       proj: p,
       outline: geoPath().projection(p)(santander) ?? '',
-      towns: TOWNS.map(c => ({ ...c, ...project(p, c.coords) })),
+      // Towns right next to a waypoint would hide its marker and label.
+      towns: TOWNS
+        .filter(c => waypoints.every(wp => Math.hypot(wp.coords[0] - c.coords[0], wp.coords[1] - c.coords[1]) > 0.16))
+        .map(c => ({ ...c, ...project(p, c.coords) })),
     };
-  }, []);
+  }, [waypoints]);
 
   return (
     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} fill="none" stroke="var(--pip)" aria-hidden="true">
@@ -197,7 +199,7 @@ function LocalMap({ waypoints, selectedId, onSelect }: MapProps) {
       {towns.map(c => (
         <g key={c.name} opacity={0.6}>
           <circle cx={c.x} cy={c.y} r={2.2} fill="rgb(var(--pip-rgb) / 0.3)" strokeWidth={0.8} />
-          <text x={c.x + 5} y={c.y + 2.5} fontSize={6} fill="var(--pip)" stroke="none">{c.name}</text>
+          <text x={c.x + 5} y={c.y + 3} fontSize={10.5} fill="var(--pip)" stroke="#000" strokeWidth={3} paintOrder="stroke">{c.name}</text>
         </g>
       ))}
       {waypoints.filter(isInsideSantander).map(wp => {
@@ -252,7 +254,7 @@ function WorldMap({ waypoints, selectedId, onSelect }: MapProps) {
 function MapExtras() {
   return (
     <>
-      <g transform={`translate(${WIDTH - 30}, ${HEIGHT - 44})`} opacity={0.5}>
+      <g transform={`translate(${WIDTH - 24}, 34)`} opacity={0.5}>
         <line x1={0} y1={-14} x2={0} y2={14} strokeWidth={0.8} />
         <line x1={-14} y1={0} x2={14} y2={0} strokeWidth={0.8} />
         <line x1={-9} y1={-9} x2={9} y2={9} strokeWidth={0.4} />
@@ -268,9 +270,7 @@ function Contact() {
   const { t, profile, settings } = usePip();
   const [copied, setCopied] = useState(false);
   const now = useNow(15_000);
-  const bogotaTime = now.toLocaleTimeString(settings.lang === 'es' ? 'es-CO' : 'en-US', {
-    timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit',
-  });
+  const bogotaTime = falloutTime(now, settings.lang, 'America/Bogota');
 
   const copy = async () => {
     try {

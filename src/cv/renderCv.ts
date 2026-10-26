@@ -40,9 +40,9 @@ export function renderCvHtml(p: Profile, lang: Lang, siteUrl?: string): string {
       <div class="cv-meta">${[q.period, q.location].filter(Boolean).map(s => esc(s!)).join(' · ')}</div>
       <p>${esc(q.summary)}</p>
       ${q.stages.map(st => `
-        ${st.heading ? `<p><strong>${esc(st.heading)}</strong></p>` : ''}
+        ${st.heading ? `<h4>${esc(st.heading)}</h4>` : ''}
         <ul>${st.objectives.map(o => `<li>${esc(o.text)}</li>`).join('')}</ul>`).join('')}
-      ${q.rewards?.length ? `<p><strong>${L.achievements}</strong></p><ul>${q.rewards.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+      ${q.rewards?.length ? `<h4>${L.achievements}</h4><ul>${q.rewards.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     </div>`).join('');
 
   const eduHtml = education.map(q =>

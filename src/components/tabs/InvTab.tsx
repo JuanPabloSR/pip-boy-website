@@ -22,14 +22,14 @@ export default function InvTab() {
 }
 
 function ItemBrowser({ category }: { category: InvCategory }) {
-  const { t, profile, setOverlay, printCv } = usePip();
+  const { t, profile, setOverlay, downloadCv } = usePip();
   const items = profile.inventory[category];
   const [index, setIndex] = useState(0);
 
   const activate = (item: InvItem) => {
     if (!item.action) return;
     soundEffects.confirm();
-    if (item.action === 'print') printCv();
+    if (item.action === 'download') downloadCv();
     else setOverlay(item.action);
   };
 

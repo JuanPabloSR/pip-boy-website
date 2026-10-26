@@ -20,6 +20,6 @@ export function falloutDate(now: Date, lang: 'es' | 'en') {
   return lang === 'es' ? `${dd}.${mm}.${yyyy}` : `${mm}.${dd}.${yyyy}`;
 }
 
-export function falloutTime(now: Date, lang: 'es' | 'en') {
-  return now.toLocaleTimeString(lang === 'es' ? 'es-CO' : 'en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase();
+export function falloutTime(now: Date, lang: 'es' | 'en', timeZone?: string) {
+  return now.toLocaleTimeString(lang === 'es' ? 'es-CO' : 'en-US', { hour: 'numeric', minute: '2-digit', timeZone }).toUpperCase();
 }

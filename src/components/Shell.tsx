@@ -109,7 +109,8 @@ function Footer() {
       content = (<><div>{date}</div>{levelBox}<div>{time}</div></>);
       break;
     case 'MAP':
-      content = (<><div>{date}</div><div><span className="grow" />{profile.location.split(',').slice(0, 2).join(',')}<span className="grow" /></div><div>{time}</div></>);
+      // The map footer shows the time at the location it names.
+      content = (<><div>{date}</div><div><span className="grow" />{profile.location.split(',').slice(0, 2).join(',')}<span className="grow" /></div><div>{falloutTime(now, settings.lang, 'America/Bogota')}</div></>);
       break;
     default:
       content = (<><div>{t.footer.hp} 115/115</div>{levelBox}<div>{t.footer.ap} 90/90</div></>);

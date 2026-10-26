@@ -11,7 +11,7 @@ const WORDS = [
   'SPRING', 'DOCKER', 'GITHUB', 'PYTHON', 'BACKUP', 'DEPLOY', 'COMMIT', 'BRANCH', 'SERVER', 'CLIENT',
   'ROUTER', 'BINARY', 'BUFFER', 'CURSOR', 'DOMAIN', 'ENGINE', 'FILTER', 'GLOBAL', 'HEADER', 'KERNEL',
   'LAMBDA', 'MODULE', 'OBJECT', 'PARSER', 'PLUGIN', 'RENDER', 'SCHEMA', 'SCRIPT', 'SOCKET', 'STRING',
-  'SYNTAX', 'THREAD', 'TOKENS', 'VECTOR', 'WIDGET', 'VAULTS', 'RADIOS', 'NUKERS', 'MUTANT', 'CAPSUL',
+  'SYNTAX', 'THREAD', 'TOKENS', 'VECTOR', 'WIDGET', 'VAULTS', 'RADIOS', 'NUKERS', 'MUTANT', 'MEMORY',
 ];
 const JUNK = '!@#$%^&*-_=+|;:\'",.?/\\';
 const PAIRS: [string, string][] = [['[', ']'], ['(', ')'], ['{', '}'], ['<', '>']];
@@ -21,12 +21,18 @@ export type Segment =
   | { kind: 'word'; id: number; word: string; removed: boolean }
   | { kind: 'bracket'; id: number; text: string; used: boolean };
 
+/** Log lines are stored as events and worded by the UI in the active language. */
+export type LogEntry =
+  | { kind: 'input'; text: string }
+  | { kind: 'denied' | 'exact' | 'wait' | 'dud' | 'reset' | 'locked' }
+  | { kind: 'likeness'; n: number };
+
 export interface HackGame {
   rows: Segment[][];
   addresses: string[];
   password: string;
   attempts: number;
-  log: string[];
+  log: LogEntry[];
   state: 'playing' | 'won' | 'locked';
 }
 
@@ -97,11 +103,11 @@ function mapSegments(game: HackGame, fn: (s: Segment) => Segment): Segment[][] {
 export function guessWord(game: HackGame, word: string): HackGame {
   if (game.state !== 'playing') return game;
   if (word === game.password) {
-    return { ...game, state: 'won', log: [...game.log, `>${word}`, '>Exact match!', '>Please wait while', '>system is accessed.'] };
+    return { ...game, state: 'won', log: [...game.log, { kind: 'input', text: word }, { kind: 'exact' }, { kind: 'wait' }] };
   }
   const attempts = game.attempts - 1;
-  const log = [...game.log, `>${word}`, '>Entry denied.', `>Likeness=${likeness(word, game.password)}`];
-  if (attempts <= 0) return { ...game, attempts: 0, state: 'locked', log: [...log, '>TERMINAL LOCKED.'] };
+  const log: LogEntry[] = [...game.log, { kind: 'input', text: word }, { kind: 'denied' }, { kind: 'likeness', n: likeness(word, game.password) }];
+  if (attempts <= 0) return { ...game, attempts: 0, state: 'locked', log: [...log, { kind: 'locked' }] };
   return { ...game, attempts, log };
 }
 
@@ -123,6 +129,6 @@ export function applyBracket(game: HackGame, id: number): HackGame {
     ...game,
     rows,
     attempts: resetTries ? MAX_ATTEMPTS : game.attempts,
-    log: [...game.log, `>${seg.text}`, resetTries ? '>Tries reset.' : '>Dud removed.'],
+    log: [...game.log, { kind: 'input', text: seg.text }, { kind: resetTries ? 'reset' : 'dud' }],
   };
 }

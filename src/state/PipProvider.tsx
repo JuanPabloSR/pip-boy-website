@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { downloadCvPdf } from '../cv/pdf';
 import { PROFILES } from '../data';
 import { UI } from '../i18n/ui';
 import { setSfxEnabled } from '../utils/audio';
@@ -66,6 +67,7 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
     root.dataset.crt = settings.crt ? 'on' : 'off';
     root.dataset.font = settings.font;
     root.lang = settings.lang;
+    document.title = UI[settings.lang].meta.title;
     setSfxEnabled(settings.sfx);
   }, [settings]);
 
@@ -93,6 +95,11 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
     window.setTimeout(() => window.print(), 50);
   }, [setOverlay]);
 
+  const downloadCv = useCallback(() => {
+    setOverlay(null);
+    downloadCvPdf(settings.lang);
+  }, [setOverlay, settings.lang]);
+
   const reboot = useCallback(() => {
     setOverlay(null);
     onReboot();
@@ -110,8 +117,9 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
     overlay,
     setOverlay,
     printCv,
+    downloadCv,
     reboot,
-  }), [settings, updateSettings, tab, setTab, subTab, setSubTab, overlay, setOverlay, printCv, reboot]);
+  }), [settings, updateSettings, tab, setTab, subTab, setSubTab, overlay, setOverlay, printCv, downloadCv, reboot]);
 
   return <PipContext.Provider value={value}>{children}</PipContext.Provider>;
 }

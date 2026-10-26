@@ -3,6 +3,7 @@ import type { Lang } from '../data/types';
 // Interface strings. Content (CV) lives in src/data; this file only holds UI chrome.
 
 const es = {
+  meta: { title: 'Juan Pablo Sánchez Rey · Desarrollador Full Stack (Java · Spring Boot · Angular)' },
   tabs: { STAT: 'STAT', INV: 'INV', DATA: 'DATA', MAP: 'MAP', RADIO: 'RADIO' },
   stat: { status: 'Estado', special: 'S.P.E.C.I.A.L.', perks: 'Perks' },
   inv: { weapons: 'Armas', apparel: 'Ropa', aid: 'Ayuda', misc: 'Varios', holo: 'Holo', ammo: 'Munición' },
@@ -13,7 +14,7 @@ const es = {
     title: 'PIP-BOY 3000 MARK IV',
     prompt: 'Pulsa cualquier tecla o toca la pantalla para encender',
     sound: 'Con sonido · Recomendado usar audífonos',
-    skip: 'Pulsa cualquier tecla para saltar',
+    skip: 'Saltar intro',
     initializing: 'Inicializando',
   },
 
@@ -28,7 +29,13 @@ const es = {
     quests: 'Misiones',
     printCv: 'Descargar CV',
     contact: 'Contacto',
+    email: 'Escribirme',
     linkedin: 'LinkedIn',
+    guide: 'Guía rápida',
+    guideInv: 'habilidades',
+    guideData: 'experiencia y formación',
+    guideMap: 'contacto',
+    guideRadio: 'música',
   },
 
   special: { points: 'Puntos', tags: 'Etiquetas' },
@@ -103,7 +110,7 @@ const es = {
     on: 'Sí',
     off: 'No',
     reboot: 'Reiniciar Pip-Boy',
-    print: 'Imprimir / guardar CV en PDF',
+    print: 'Imprimir CV',
     terminal: 'Abrir terminal',
     close: 'Cerrar',
     keys: 'Controles',
@@ -121,6 +128,7 @@ const es = {
 export type UiStrings = typeof es;
 
 const en: UiStrings = {
+  meta: { title: 'Juan Pablo Sánchez Rey · Full Stack Developer (Java · Spring Boot · Angular)' },
   tabs: { STAT: 'STAT', INV: 'INV', DATA: 'DATA', MAP: 'MAP', RADIO: 'RADIO' },
   stat: { status: 'Status', special: 'S.P.E.C.I.A.L.', perks: 'Perks' },
   inv: { weapons: 'Weapons', apparel: 'Apparel', aid: 'Aid', misc: 'Misc', holo: 'Holo', ammo: 'Ammo' },
@@ -131,7 +139,7 @@ const en: UiStrings = {
     title: 'PIP-BOY 3000 MARK IV',
     prompt: 'Press any key or tap the screen to power on',
     sound: 'Sound on · Headphones recommended',
-    skip: 'Press any key to skip',
+    skip: 'Skip intro',
     initializing: 'Initializing',
   },
 
@@ -146,7 +154,13 @@ const en: UiStrings = {
     quests: 'Quests',
     printCv: 'Download résumé',
     contact: 'Contact',
+    email: 'Email me',
     linkedin: 'LinkedIn',
+    guide: 'Quick guide',
+    guideInv: 'skills',
+    guideData: 'experience & education',
+    guideMap: 'contact',
+    guideRadio: 'music',
   },
 
   special: { points: 'Points', tags: 'Tags' },
@@ -221,7 +235,7 @@ const en: UiStrings = {
     on: 'On',
     off: 'Off',
     reboot: 'Reboot Pip-Boy',
-    print: 'Print / save résumé as PDF',
+    print: 'Print résumé',
     terminal: 'Open terminal',
     close: 'Close',
     keys: 'Controls',

@@ -76,7 +76,7 @@ export default function RadioTab() {
             <>
               <div className="section-label">{t.radio.nowPlaying}</div>
               <div style={{ fontSize: '1.1rem', textTransform: 'uppercase' }}>
-                {track && radio.playing ? `${track.title} — ${track.artist}` : '—'}
+                {track && radio.status === 'playing' ? `${track.title} — ${track.artist}` : radio.status === 'loading' ? `${t.radio.loading}...` : '—'}
               </div>
             </>
           )}

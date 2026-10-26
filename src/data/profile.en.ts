@@ -242,9 +242,9 @@ const profile: Profile = {
         stats: [{ label: 'Format', value: 'Game' }],
       },
       {
-        id: 'cv', name: 'JPSR file (résumé)', kind: 'Holotape · Document', icon: 'printer', action: 'print',
-        description: 'Printable résumé. Use "Save as PDF" in the print dialog.',
-        stats: [{ label: 'Format', value: 'PDF / Print' }],
+        id: 'cv', name: 'JPSR file (résumé)', kind: 'Holotape · Document', icon: 'printer', action: 'download',
+        description: 'My résumé as a PDF, generated from this very Pip-Boy. To print it, use ⚙ › Print.',
+        stats: [{ label: 'Format', value: 'PDF' }],
       },
     ],
     ammo: [

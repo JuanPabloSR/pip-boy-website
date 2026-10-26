@@ -23,7 +23,8 @@ const TEXT = {
       '  FORMACION    Estudios y certificaciones',
       '  PROYECTOS    Talleres / proyectos',
       '  CONTACTO     Canales de transmisión',
-      '  CV           Imprimir / guardar CV en PDF',
+      '  CV           Descargar CV en PDF',
+      '  IMPRIMIR     Imprimir CV',
       '  HACK         Minijuego de hackeo',
       '  RADIO [ON|OFF|SIG]   Controlar la radio',
       '  TEMA <FO4|FO3|NV|VAULT|WHITE>',
@@ -34,6 +35,7 @@ const TEXT = {
     unknown: (c: string) => `COMANDO NO RECONOCIDO: ${c}. Escribe AYUDA.`,
     sudo: 'ACCESO DENEGADO. Este incidente será reportado al Supervisor del Refugio.',
     printing: 'Enviando expediente a la impresora...',
+    downloading: 'Descargando expediente (PDF)...',
     hackWin: [
       '>> ACCESO CONCEDIDO <<',
       'Nota del morador: gracias por llegar hasta aquí. Si buscas a alguien',
@@ -62,7 +64,8 @@ const TEXT = {
       '  EDUCATION    Studies and certifications',
       '  PROJECTS     Workshops / projects',
       '  CONTACT      Transmission channels',
-      '  CV           Print / save résumé as PDF',
+      '  CV           Download résumé (PDF)',
+      '  PRINT        Print résumé',
       '  HACK         Hacking minigame',
       '  RADIO [ON|OFF|NEXT]  Control the radio',
       '  THEME <FO4|FO3|NV|VAULT|WHITE>',
@@ -73,6 +76,7 @@ const TEXT = {
     unknown: (c: string) => `UNKNOWN COMMAND: ${c}. Type HELP.`,
     sudo: 'ACCESS DENIED. This incident will be reported to the Overseer.',
     printing: 'Sending file to the printer...',
+    downloading: 'Downloading file (PDF)...',
     hackWin: [
       '>> ACCESS GRANTED <<',
       'Dweller note: thanks for making it this far. If you are looking for someone',
@@ -101,7 +105,8 @@ const ALIASES: Record<string, string> = {
   formacion: 'edu', formación: 'edu', education: 'edu', edu: 'edu', 'formacion.doc': 'edu', 'education.doc': 'edu',
   proyectos: 'projects', projects: 'projects', 'proyectos.lst': 'projects', 'projects.lst': 'projects',
   contacto: 'contact', contact: 'contact', 'contacto.cfg': 'contact', 'contact.cfg': 'contact',
-  cv: 'cv', imprimir: 'cv', print: 'cv', 'cv.pdf': 'cv', resume: 'cv',
+  cv: 'cv', 'cv.pdf': 'cv', resume: 'cv', descargar: 'cv', download: 'cv',
+  imprimir: 'print', print: 'print',
   hack: 'hack', hackear: 'hack',
   radio: 'radio',
   tema: 'theme', theme: 'theme', color: 'theme',
@@ -118,7 +123,7 @@ const ALIASES: Record<string, string> = {
 
 export default function Terminal({ startWithHack }: { startWithHack: boolean }) {
   const pip = usePip();
-  const { profile, settings, setOverlay, updateSettings, setTab, printCv } = pip;
+  const { profile, settings, setOverlay, updateSettings, setTab, printCv, downloadCv } = pip;
   const radio = useRadio();
   const tx = TEXT[settings.lang];
   const [mode, setMode] = useState<'shell' | 'hack'>(startWithHack ? 'hack' : 'shell');
@@ -190,6 +195,9 @@ export default function Terminal({ startWithHack }: { startWithHack: boolean }) 
           `TZ ........ ${profile.timezoneLabel}`,
         );
       case 'cv':
+        print(tx.downloading);
+        return downloadCv();
+      case 'print':
         print(tx.printing);
         return printCv();
       case 'hack':

@@ -3,6 +3,8 @@ import type { RadioTrack } from './types';
 // Values that are identical in every language.
 
 export const CONTACT = {
+  /** Public URL of the deployed site (GitHub Pages). VITE_SITE_URL overrides it at build time. */
+  site: 'https://juanpablosr.github.io/pip-boy-website/',
   email: 'juanpablosanchez744@gmail.com',
   linkedin: 'https://www.linkedin.com/in/juan-pablo-sanchez-rey',
   github: 'https://github.com/JuanPabloSR',

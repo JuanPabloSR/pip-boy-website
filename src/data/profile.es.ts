@@ -242,9 +242,9 @@ const profile: Profile = {
         stats: [{ label: 'Formato', value: 'Juego' }],
       },
       {
-        id: 'cv', name: 'Expediente JPSR (CV)', kind: 'Holocinta · Documento', icon: 'printer', action: 'print',
-        description: 'Versión imprimible de la hoja de vida. Usa "Guardar como PDF" en el diálogo de impresión.',
-        stats: [{ label: 'Formato', value: 'PDF / Impresión' }],
+        id: 'cv', name: 'Expediente JPSR (CV)', kind: 'Holocinta · Documento', icon: 'printer', action: 'download',
+        description: 'Mi hoja de vida en PDF, generada a partir de este mismo Pip-Boy. Para imprimirla, usa ⚙ › Imprimir.',
+        stats: [{ label: 'Formato', value: 'PDF' }],
       },
     ],
     ammo: [

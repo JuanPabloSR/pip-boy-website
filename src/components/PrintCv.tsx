@@ -6,9 +6,6 @@ import { usePip } from '../state/pip';
 export default function PrintCv() {
   const { profile, settings } = usePip();
   // The markup is generated from our own static data, with every value escaped.
-  const html = useMemo(
-    () => renderCvHtml(profile, settings.lang, window.location.origin + window.location.pathname),
-    [profile, settings.lang],
-  );
+  const html = useMemo(() => renderCvHtml(profile, settings.lang, profile.site), [profile, settings.lang]);
   return <article className="print-cv" dangerouslySetInnerHTML={{ __html: html }} />;
 }

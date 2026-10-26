@@ -14,22 +14,28 @@ export function useListNav(count: number, index: number, setIndex: (i: number) =
   const { overlay } = usePip();
   const detailRef = useRef<HTMLDivElement>(null);
 
+  // When a list row has keyboard focus, the focus follows the selection
+  // (roving focus), so Enter always acts on the highlighted row.
+  const move = (next: number) => {
+    setIndex(next);
+    soundEffects.hover();
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && focused.classList.contains('plist-item')) {
+      focused.closest('.plist')?.querySelectorAll<HTMLElement>('.plist-item')[next]?.focus();
+    }
+  };
+
   useKeys(e => {
     const key = e.key.toLowerCase();
+    const onRow = e.target instanceof Element && e.target.classList.contains('plist-item');
     if (key === 'w' || e.key === 'ArrowUp') {
       e.preventDefault();
-      if (index > 0) {
-        setIndex(index - 1);
-        soundEffects.hover();
-      }
+      if (index > 0) move(index - 1);
     } else if (key === 's' || e.key === 'ArrowDown') {
       e.preventDefault();
-      if (index < count - 1) {
-        setIndex(index + 1);
-        soundEffects.hover();
-      }
-    } else if (e.key === 'Enter' && onActivate && !isInteractive(e.target)) {
-      e.preventDefault();
+      if (index < count - 1) move(index + 1);
+    } else if (e.key === 'Enter' && onActivate && (onRow || !isInteractive(e.target))) {
+      e.preventDefault(); // replaces the row button's own click
       onActivate(index);
     }
   }, overlay === null && count > 0);

@@ -46,9 +46,8 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
       unlockAudio();
       soundEffects.bootHum();
       setPhase('terminal');
-    } else if (phase === 'terminal') {
-      setPhase('splash');
     } else {
+      // Anyone in a hurry (recruiters!) goes straight to the Pip-Boy.
       finish();
     }
   }, [phase, finish]);
@@ -77,26 +76,26 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
     let timer = 0;
     const step = () => {
       // Print a few characters per tick; pause on line breaks like a real teletype.
-      const chunk = 2 + Math.floor(Math.random() * 3);
+      const chunk = 3 + Math.floor(Math.random() * 4);
       i = Math.min(full.length, i + chunk);
       setText(full.slice(0, i));
       if (full[i - 1] !== ' ') soundEffects.typewriterClick();
       if (i >= full.length) {
-        timer = window.setTimeout(() => setPhase('splash'), 550);
+        timer = window.setTimeout(() => setPhase('splash'), 400);
         return;
       }
       const atBreak = full[i - 1] === '\n' || full.slice(i - chunk, i).includes('\n');
-      const pause = full.slice(0, i).endsWith('38911 BYTES FREE') ? 380 : atBreak ? 70 : 16;
+      const pause = full.slice(0, i).endsWith('38911 BYTES FREE') ? 300 : atBreak ? 45 : 12;
       timer = window.setTimeout(step, pause);
     };
-    timer = window.setTimeout(step, 450);
+    timer = window.setTimeout(step, 350);
     return () => window.clearTimeout(timer);
   }, [phase, profile.name]);
 
   useEffect(() => {
     if (phase !== 'splash') return;
     soundEffects.confirm();
-    const id = window.setTimeout(finish, reducedMotion() ? 300 : 1700);
+    const id = window.setTimeout(finish, reducedMotion() ? 300 : 1300);
     return () => window.clearTimeout(id);
   }, [phase, finish]);
 
@@ -104,7 +103,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
     <div className="boot" onClick={advance} role="presentation">
       {phase === 'power' && (
         <div className="boot-power">
-          <button type="button" className="power-ring pbtn" style={{ borderRadius: '50%', padding: 0, outline: 'none' }}
+          <button type="button" className="power-ring"
             onClick={e => { e.stopPropagation(); advance(); }} aria-label={t.power.prompt} autoFocus>
             <Power aria-hidden="true" />
           </button>
@@ -130,7 +129,11 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {phase !== 'power' && <div className="boot-skip">{t.power.skip}</div>}
+      {phase !== 'power' && (
+        <button type="button" className="boot-skip" onClick={e => { e.stopPropagation(); finish(); }}>
+          {t.power.skip} ›
+        </button>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import BootScreen from './components/BootScreen';
 import PrintCv from './components/PrintCv';
@@ -11,11 +11,18 @@ import RadioProvider from './state/RadioProvider';
 import { usePip } from './state/pip';
 import { readStorage, writeStorage } from './utils/storage';
 
-const InvTab = lazy(() => import('./components/tabs/InvTab'));
-const DataTab = lazy(() => import('./components/tabs/DataTab'));
-const MapTab = lazy(() => import('./components/tabs/MapTab'));
-const RadioTab = lazy(() => import('./components/tabs/RadioTab'));
-const Terminal = lazy(() => import('./components/terminal/Terminal'));
+const loadInv = () => import('./components/tabs/InvTab');
+const loadData = () => import('./components/tabs/DataTab');
+const loadMap = () => import('./components/tabs/MapTab');
+const loadRadio = () => import('./components/tabs/RadioTab');
+const loadTerminal = () => import('./components/terminal/Terminal');
+const InvTab = lazy(loadInv);
+const DataTab = lazy(loadData);
+const MapTab = lazy(loadMap);
+const RadioTab = lazy(loadRadio);
+const Terminal = lazy(loadTerminal);
+
+type IdleWindow = Window & { requestIdleCallback?: (cb: () => void) => number };
 
 const BOOTED_KEY = 'pipboy:booted';
 
@@ -51,6 +58,15 @@ function TabView() {
 /** The Pip-Boy screen; inert (unfocusable, hidden from AT) while a dialog is open. */
 function MainScreen() {
   const { overlay } = usePip();
+
+  // Warm up the other tabs once the first screen is shown, so switching is instant.
+  useEffect(() => {
+    const prefetch = () => [loadInv, loadData, loadMap, loadRadio, loadTerminal].forEach(load => void load());
+    const w = window as IdleWindow;
+    if (w.requestIdleCallback) w.requestIdleCallback(prefetch);
+    else window.setTimeout(prefetch, 1500);
+  }, []);
+
   return (
     <div className="power-on" style={{ height: '100%' }} inert={overlay !== null}>
       <Shell>

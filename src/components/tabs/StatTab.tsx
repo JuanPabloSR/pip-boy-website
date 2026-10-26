@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Mail, Printer } from 'lucide-react';
+import { cvPdfUrl } from '../../cv/pdf';
 import { levelFromExperience } from '../../data';
+import { useKeys } from '../../hooks/useKeys';
 import { useListNav } from '../../hooks/useListNav';
-import { usePip } from '../../state/pip';
+import { usePip, type TabId } from '../../state/pip';
 import { soundEffects } from '../../utils/audio';
-import { GithubIcon, LinkedinIcon } from '../Icon';
 import SubTabs from '../SubTabs';
 import VaultBoy from '../VaultBoy';
 
@@ -22,8 +22,38 @@ export default function StatTab() {
   );
 }
 
+/** FO4-style button prompt: a key cap plus a label, clickable like a link. */
+function Prompt({ k, label, href, download, onClick, primary }: {
+  k: string; label: string; href?: string; download?: boolean; onClick?: () => void; primary?: boolean;
+}) {
+  const cls = `prompt ${primary ? 'primary' : ''}`;
+  const body = (<><kbd>{k}</kbd>{label}</>);
+  if (href) {
+    const external = href.startsWith('http');
+    return (
+      <a className={cls} href={href} download={download || undefined} onClick={onClick} aria-keyshortcuts={k}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+        {body}
+      </a>
+    );
+  }
+  return <button type="button" className={cls} onClick={onClick} aria-keyshortcuts={k}>{body}</button>;
+}
+
 function Status() {
-  const { t, profile, setTab, printCv } = usePip();
+  const { t, profile, setTab, settings, overlay, downloadCv } = usePip();
+  const go = (tab: TabId) => { soundEffects.tabSwitch(); setTab(tab); };
+
+  // Shortcuts for the prompts below.
+  useKeys(e => {
+    const key = e.key.toLowerCase();
+    if (e.repeat) return;
+    if (key === 'c') { soundEffects.confirm(); downloadCv(); }
+    else if (key === 'm') window.location.href = `mailto:${profile.email}`;
+    else if (key === 'l') window.open(profile.linkedin, '_blank', 'noopener');
+    else if (key === 'g') window.open(profile.github, '_blank', 'noopener');
+  }, overlay === null);
+
   const { level, progress } = levelFromExperience(profile.careerStart);
   const special = Object.fromEntries(profile.special.map(s => [s.letter, s.value * 10]));
   const limbs: [string, number][][] = [
@@ -43,24 +73,15 @@ function Status() {
           <div className="dweller-meta" style={{ marginTop: '0.2rem' }}>
             {t.status.vaultId}: {profile.shortName}-744 · {profile.location}
           </div>
+          <a className="dweller-email" href={`mailto:${profile.email}`}>✉ {profile.email}</a>
         </div>
 
-        <div className="pbtn-row">
-          <button type="button" className="pbtn solid" onClick={() => { soundEffects.confirm(); printCv(); }}>
-            <Printer aria-hidden="true" />{t.status.printCv}
-          </button>
-          <button type="button" className="pbtn" onClick={() => { soundEffects.tabSwitch(); setTab('MAP'); }}>
-            <Mail aria-hidden="true" />{t.status.contact}
-          </button>
-          <a className="pbtn" href={profile.linkedin} target="_blank" rel="noopener noreferrer">
-            <LinkedinIcon />{t.status.linkedin}
-          </a>
-          <a className="pbtn" href={profile.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-            <GithubIcon />GitHub
-          </a>
+        <div className="prompts">
+          <Prompt k="C" label={t.status.printCv} href={cvPdfUrl(settings.lang)} download primary onClick={() => soundEffects.confirm()} />
+          <Prompt k="M" label={t.status.email} href={`mailto:${profile.email}`} />
+          <Prompt k="L" label={t.status.linkedin} href={profile.linkedin} />
+          <Prompt k="G" label="GitHub" href={profile.github} />
         </div>
-
-        {profile.summary.map((p, i) => <p key={i} className="detail-text">{p}</p>)}
 
         <div className="kpis">
           <div className="kpi"><b>4+</b><span>{t.status.years}</span></div>
@@ -68,6 +89,16 @@ function Status() {
           <div className="kpi"><b>{profile.perks.length}</b><span>{t.status.perks}</span></div>
           <div className="kpi"><b>{questsDone}</b><span>{t.status.quests}</span></div>
         </div>
+
+        {profile.summary.map((p, i) => <p key={i} className="detail-text">{p}</p>)}
+
+        <nav className="guide" aria-label={t.status.guide}>
+          <span className="section-label">{t.status.guide}</span>
+          <button type="button" onClick={() => go('INV')}>INV · {t.status.guideInv}</button>
+          <button type="button" onClick={() => go('DATA')}>DATA · {t.status.guideData}</button>
+          <button type="button" onClick={() => go('MAP')}>MAP · {t.status.guideMap}</button>
+          <button type="button" onClick={() => go('RADIO')}>RADIO · {t.status.guideRadio}</button>
+        </nav>
       </section>
 
       <section className="figure" aria-label={`${t.status.level} ${level}`}>

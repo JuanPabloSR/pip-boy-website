@@ -30,6 +30,8 @@ export interface PipState {
   overlay: Overlay;
   setOverlay: (o: Overlay) => void;
   printCv: () => void;
+  /** Downloads the pre-rendered PDF in the current language. */
+  downloadCv: () => void;
   reboot: () => void;
 }
 
