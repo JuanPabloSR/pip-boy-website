@@ -13,7 +13,8 @@ Hay tres formatos con la misma música y los mismos tiempos:
 | `9x16` (1080×1920) | Instagram Reels, TikTok, YouTube Shorts | `comp/vertical.html?fmt=9x16` |
 
 En 9:16 todo lo importante queda dentro de la zona segura de Reels (sin tapar con el encabezado,
-el texto de la publicación ni los botones laterales).
+el texto de la publicación ni los botones laterales). Su portada también cabe completa en el recorte
+3:4 que hace Instagram en la cuadrícula del perfil.
 
 Las composiciones son líneas de tiempo deterministas sobre un motor común (`comp/engine.js`,
 `comp/style.css`): `render.cjs` las avanza cuadro a cuadro con Playwright y manda los cuadros a ffmpeg.
@@ -31,6 +32,8 @@ python3 promo/soundtrack.py          # banda sonora → promo/comp/soundtrack.wa
 node promo/render.cjs                # 16:9 → promo/out/pipboy-promo.mp4 (≈ 8 min)
 node promo/render.cjs --format=4x5   # → promo/out/pipboy-promo-4x5.mp4
 node promo/render.cjs --format=9x16  # → promo/out/pipboy-promo-9x16.mp4
+node promo/render.cjs --format=4x5 --cover    # portada → promo/out/cover-4x5.png
+node promo/render.cjs --format=9x16 --cover   # portada → promo/out/cover-9x16.png
 ```
 
 - La URL del cierre es `juanpablosanchezdev.com`; para cambiarla: `--site=otro-dominio.com`

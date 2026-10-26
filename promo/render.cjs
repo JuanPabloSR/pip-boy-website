@@ -7,6 +7,7 @@
  *   node promo/render.cjs --format=9x16    # vertical for Reels/TikTok/Shorts (1080x1920)
  *   node promo/render.cjs --format=4x5     # vertical feed for LinkedIn (1080x1350)
  *   node promo/render.cjs --preview=8.5,16,30     # writes promo/out/preview-<format>/*.jpg
+ *   node promo/render.cjs --format=9x16 --cover   # writes promo/out/cover-<format>.png (vertical only)
  *
  * Needs Playwright (Chromium) and ffmpeg with libx264.
  */
@@ -31,6 +32,8 @@ if (!fmt) throw new Error(`Unknown --format=${format} (use ${Object.keys(FORMATS
 const out = arg('out') || path.join(__dirname, 'out', format === '16x9' ? 'pipboy-promo.mp4' : `pipboy-promo-${format}.mp4`);
 const site = arg('site');
 const preview = arg('preview');
+const cover = process.argv.includes('--cover');
+if (cover && format === '16x9') throw new Error('--cover is only available for the vertical formats');
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.json': 'application/json', '.wav': 'audio/wav' };
 const server = http.createServer((req, res) => {
@@ -42,7 +45,7 @@ const server = http.createServer((req, res) => {
 
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
-  const query = new URLSearchParams({ fmt: format, ...(site ? { site } : {}) });
+  const query = new URLSearchParams({ fmt: format, ...(site ? { site } : {}), ...(cover ? { cover: 1 } : {}) });
   const url = `http://127.0.0.1:${server.address().port}/${fmt.page}?${query}`;
   const browser = await chromium.launch({ args: ['--force-color-profile=srgb', '--disable-lcd-text'] });
   const page = await browser.newPage({ viewport: { width: fmt.width, height: fmt.height } });
@@ -55,7 +58,13 @@ const server = http.createServer((req, res) => {
   };
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  if (preview) {
+  if (cover) {
+    // the end card once every element has landed
+    await page.evaluate(() => window.renderFrame(46.6));
+    const file = path.join(path.dirname(out), `cover-${format}.png`);
+    fs.writeFileSync(file, await page.screenshot({ type: 'png' }));
+    console.log('wrote', file);
+  } else if (preview) {
     const dir = path.join(path.dirname(out), `preview-${format}`);
     fs.mkdirSync(dir, { recursive: true });
     for (const t of preview.split(',').map(Number)) fs.writeFileSync(path.join(dir, `t${t.toFixed(2)}.jpg`), await shoot(t));
