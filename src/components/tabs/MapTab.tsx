@@ -1,380 +1,326 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { geoMercator, geoPath } from 'd3-geo';
-import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
-import walkGif from '../../assets/derek-walk.gif';
-import santanderData from '../../assets/santander.geo.json';
+import { geoMercator, geoPath, type GeoProjection } from 'd3-geo';
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson';
+import { Check, Copy, Mail, MapPin, Radio } from 'lucide-react';
 import colombiaData from '../../assets/colombia.geo.json';
+import santanderData from '../../assets/santander.geo.json';
+import type { Waypoint } from '../../data/types';
+import { useListNav } from '../../hooks/useListNav';
+import { useNow } from '../../hooks/useNow';
+import { usePip } from '../../state/pip';
+import { soundEffects } from '../../utils/audio';
+import { GithubIcon, LinkedinIcon } from '../Icon';
+import SubTabs from '../SubTabs';
+import VaultBoy from '../VaultBoy';
 
-const GREEN = '#14F814';
 const WIDTH = 380;
 const HEIGHT = 540;
-const ZOOM_SCALE = 4.2; // ratio between Santander and Colombia projections
+const ZOOM_SCALE = 4.2; // ratio between the Santander and Colombia projections
+const SANTANDER_CODE = '68';
+const ANTIOQUIA_CODE = '05';
 
-// Santander cities [lon, lat]
-const santanderCities: CityDef[] = [
-  { name: 'BUCARAMANGA', coords: [-73.1198, 7.1254], capital: true },
+// Santander towns [lon, lat]
+const TOWNS: { name: string; coords: [number, number] }[] = [
   { name: 'FLORIDABLANCA', coords: [-73.0864, 7.0622] },
-  { name: 'GIRÓN', coords: [-73.1710, 7.0684] },
+  { name: 'GIRÓN', coords: [-73.171, 7.0684] },
   { name: 'PIEDECUESTA', coords: [-73.0505, 6.9872] },
   { name: 'B/BERMEJA', coords: [-73.8549, 7.0653] },
   { name: 'SAN GIL', coords: [-73.1347, 6.5544] },
-  { name: 'SOCORRO', coords: [-73.2614, 6.4700] },
+  { name: 'SOCORRO', coords: [-73.2614, 6.47] },
   { name: 'MÁLAGA', coords: [-72.7334, 6.7044] },
   { name: 'VÉLEZ', coords: [-73.6734, 6.0131] },
   { name: 'BARBOSA', coords: [-73.6143, 5.9317] },
-  { name: 'EL PLAYÓN', coords: [-73.2050, 7.4700] },
+  { name: 'EL PLAYÓN', coords: [-73.205, 7.47] },
   { name: 'RIONEGRO', coords: [-73.1543, 7.3821] },
   { name: 'LEBRIJA', coords: [-73.2161, 7.1145] },
   { name: 'SAN VICENTE', coords: [-73.4244, 6.8839] },
   { name: 'CIMITARRA', coords: [-73.9507, 6.3167] },
-  { name: 'ZAPATOCA', coords: [-73.2690, 6.8138] },
+  { name: 'ZAPATOCA', coords: [-73.269, 6.8138] },
   { name: 'BARICHARA', coords: [-73.2258, 6.6356] },
 ];
 
-interface CityDef {
-  name: string;
-  coords: [number, number];
-  capital?: boolean;
-}
+const colombia = colombiaData as unknown as FeatureCollection<Polygon | MultiPolygon, { DPTO: string; NAME: string }>;
+const santander = santanderData as unknown as Feature<Polygon>;
 
-type MapView = 'santander' | 'colombia';
+const worldProjection = () => geoMercator().center([-74.0, 4.5]).scale(2400).translate([WIDTH / 2, HEIGHT / 2]);
+const localProjection = () => geoMercator().center([-73.5, 6.9]).scale(10000).translate([WIDTH / 2, HEIGHT / 2]);
 
 export default function MapTab() {
-  const [view, setView] = useState<MapView>('santander');
+  const { t, profile, subTab, setSubTab } = usePip();
+  const isLocal = subTab.MAP === 0;
+  const waypoints = profile.waypoints;
+  const [index, setIndex] = useState(0);
 
-  // Santander centroid in Colombia map pixel-space (% for transform-origin)
-  const santanderOrigin = useMemo(() => {
-    const projection = geoMercator().center([-74.0, 4.5]).scale(2400).translate([WIDTH / 2, HEIGHT / 2]);
-    const collection = colombiaData as unknown as FeatureCollection<Polygon | MultiPolygon>;
-    const feat = collection.features.find(f => (f.properties as { DPTO: string }).DPTO === '68');
-    if (feat) {
-      const c = geoPath().projection(projection).centroid(feat);
-      return `${(c[0] / WIDTH) * 100}% ${(c[1] / HEIGHT) * 100}%`;
-    }
-    return '55% 35%';
+  const select = (i: number) => {
+    setIndex(i);
+    // Waypoints outside Santander only exist on the world map.
+    if (!isInsideSantander(waypoints[i])) setSubTab('MAP', 1);
+  };
+  const { detailRef, pick } = useListNav(waypoints.length, index, select);
+
+  // Santander's centroid in world-map pixels, used as the zoom origin.
+  const zoomOrigin = useMemo(() => {
+    const feat = colombia.features.find(f => f.properties.DPTO === SANTANDER_CODE);
+    if (!feat) return '55% 35%';
+    const [x, y] = geoPath().projection(worldProjection()).centroid(feat);
+    return `${(x / WIDTH) * 100}% ${(y / HEIGHT) * 100}%`;
   }, []);
 
-  const toggle = () => setView(v => v === 'santander' ? 'colombia' : 'santander');
-  const isSantander = view === 'santander';
+  const switchMap = () => {
+    soundEffects.subTabSwitch();
+    setSubTab('MAP', isLocal ? 1 : 0);
+  };
+
+  const selectedId = waypoints[index]?.id;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: 'flex', gap: '2rem', height: '100%', overflow: 'hidden' }}>
+    <>
+      <SubTabs tab="MAP" labels={[t.map.local, t.map.world]} />
+      <div className="split wide-right">
+        <div className="pane flex" style={{ gap: '0.65rem' }}>
+          <Contact />
 
-      {/* Left: Waypoints */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', overflow: 'auto', minWidth: 0 }} className="no-scrollbar">
-        <div style={{ fontSize: '0.85rem', opacity: 0.5, marginBottom: '0.25rem' }}>// WAYPOINTS ACTIVOS</div>
+          <span className="section-label" style={{ marginTop: '0.4rem' }}>// {t.mapUi.waypoints}</span>
+          <div className="plist" role="listbox" aria-label={t.mapUi.waypoints}>
+            {waypoints.map((wp, i) => (
+              <button key={wp.id} type="button" role="option" className="plist-item" aria-selected={i === index} onClick={() => pick(i)}>
+                <span className="marker" aria-hidden="true">{wp.home ? '◈' : '◇'}</span>
+                <span className="label">
+                  {wp.name}
+                  <small>{wp.label}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="detail-text" style={{ fontSize: '0.92rem' }} aria-live="polite">{waypoints[index]?.description}</p>
+        </div>
 
-        <WaypointCard icon="◈" label="UBICACIÓN ACTUAL" value="Bucaramanga, Santander" sub="Colombia · COL-007 · Zona Andina" />
-        <WaypointCard
-          icon="✉" label="CANAL DE TRANSMISIÓN"
-          value="juanpablosanchez744@gmail.com"
-          link="mailto:juanpablosanchez744@gmail.com"
-        />
-        <WaypointCard
-          icon="⬡" label="RED SOCIAL VAULT-TEC"
-          value="linkedin.com/in/juan-pablo-sanchez-rey"
-          link="https://linkedin.com/in/juan-pablo-sanchez-rey"
-        />
+        <div className="map-frame" ref={detailRef} aria-label={isLocal ? t.mapUi.santander : t.mapUi.colombia} role="img">
+          <button type="button" className="map-arrow" style={{ left: 6 }} onClick={switchMap} aria-label={t.mapUi.prev}>◄</button>
+          <button type="button" className="map-arrow" style={{ right: 6 }} onClick={switchMap} aria-label={t.mapUi.next}>►</button>
 
-        <div style={{ border: `1px solid ${GREEN}`, padding: '0.85rem', fontSize: '0.9rem', opacity: 0.75, lineHeight: 1.8, marginTop: '0.5rem' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '0.4rem', fontSize: '1rem' }}>// SEÑAL DE RADIO LOCAL</div>
-          <div>► ESTADO: <span style={{ textShadow: `0 0 6px ${GREEN}` }}>ONLINE</span></div>
-          <div>► DISPONIBLE: Proyectos Full Stack, Consultoría, Freelance</div>
-          <div>► ZONA HORARIA: UTC-5 (Bogotá, COL)</div>
+          <span className="map-label" style={{ top: 8, left: '50%', transform: 'translateX(-50%)' }}>
+            {isLocal ? t.mapUi.santander : t.mapUi.colombia}
+          </span>
+          <span className="map-label" style={{ top: 8, left: 10 }}>{isLocal ? "N 8°07'" : "N 12°27'"}</span>
+          <span className="map-label" style={{ bottom: 8, right: 10 }}>{isLocal ? "W 73°32'" : "W 74°00'"}</span>
+
+          {/* World layer zooms into Santander while the local layer zooms out of it */}
+          <motion.div className="map-layer"
+            initial={false}
+            animate={{ scale: isLocal ? ZOOM_SCALE : 1, opacity: isLocal ? 0 : 1 }}
+            transition={{
+              scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] },
+              opacity: isLocal ? { duration: 0.9, delay: 0.4 } : { duration: 0.5, delay: 1 },
+            }}
+            style={{ transformOrigin: zoomOrigin, pointerEvents: isLocal ? 'none' : 'auto' }}>
+            <WorldMap waypoints={waypoints} selectedId={selectedId} onSelect={id => pick(waypoints.findIndex(w => w.id === id))} />
+          </motion.div>
+
+          <motion.div className="map-layer"
+            initial={false}
+            animate={{ scale: isLocal ? 1 : 1 / ZOOM_SCALE, opacity: isLocal ? 1 : 0 }}
+            transition={{
+              scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] },
+              opacity: isLocal ? { duration: 0.5, delay: 1 } : { duration: 0.5 },
+            }}
+            style={{ pointerEvents: isLocal ? 'auto' : 'none' }}>
+            <LocalMap waypoints={waypoints} selectedId={selectedId} onSelect={id => pick(waypoints.findIndex(w => w.id === id))} />
+          </motion.div>
+
+          <div className="map-walker"><VaultBoy name={['map', 'walk-cat']} /></div>
+          <span className="map-label" style={{ bottom: 8, left: '50%', transform: 'translateX(-50%)' }}>{t.mapUi.cartography} v3.2</span>
         </div>
       </div>
-
-      {/* Right: Map container */}
-      <div style={{
-        flex: 1.4, border: `1px solid rgba(20,248,20,0.35)`, position: 'relative',
-        overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.9)',
-      }}>
-        {/* Grid overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.06,
-          backgroundImage: `linear-gradient(${GREEN} 1px, transparent 1px), linear-gradient(90deg, ${GREEN} 1px, transparent 1px)`,
-          backgroundSize: '30px 30px',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Map switcher arrows */}
-        <button onClick={toggle} style={arrowStyle('left')} aria-label="Previous map">◄</button>
-        <button onClick={toggle} style={arrowStyle('right')} aria-label="Next map">►</button>
-
-        {/* Map label */}
-        <motion.span
-          key={view}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.5 }}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          style={{
-            position: 'absolute', top: '6px', left: '50%', transform: 'translateX(-50%)',
-            fontSize: '0.7rem', letterSpacing: '2px', zIndex: 5,
-          }}>
-          {isSantander ? 'DPTO. SANTANDER' : 'REPÚBLICA DE COLOMBIA'}
-        </motion.span>
-
-        {/* ─── Layered maps with zoom transition ─── */}
-        {/* Colombia layer */}
-        <motion.div
-          animate={{
-            scale: isSantander ? ZOOM_SCALE : 1,
-            opacity: isSantander ? 0 : 1,
-          }}
-          transition={{
-            scale: { duration: 1.8, ease: [0.4, 0, 0.2, 1] },
-            opacity: isSantander
-              ? { duration: 1.0, delay: 0.4, ease: 'easeIn' }
-              : { duration: 0.5, delay: 1.1, ease: 'easeOut' },
-          }}
-          style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transformOrigin: santanderOrigin,
-            pointerEvents: isSantander ? 'none' : 'auto',
-          }}
-        >
-          <ColombiaMapSVG />
-        </motion.div>
-
-        {/* Santander layer */}
-        <motion.div
-          animate={{
-            scale: isSantander ? 1 : 1 / ZOOM_SCALE,
-            opacity: isSantander ? 1 : 0,
-          }}
-          transition={{
-            scale: { duration: 1.8, ease: [0.4, 0, 0.2, 1] },
-            opacity: isSantander
-              ? { duration: 0.5, delay: 1.1, ease: 'easeOut' }
-              : { duration: 0.5, ease: 'easeIn' },
-          }}
-          style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transformOrigin: 'center center',
-            pointerEvents: isSantander ? 'auto' : 'none',
-          }}
-        >
-          <SantanderMapSVG />
-        </motion.div>
-
-        {/* Vault Boy */}
-        <img
-          src={walkGif}
-          alt="Vault Boy"
-          style={{
-            position: 'absolute', bottom: '8px', left: '8px',
-            width: 75, height: 75, objectFit: 'contain',
-            mixBlendMode: 'screen',
-            filter: 'sepia(100%) hue-rotate(75deg) saturate(500%) brightness(110%) contrast(120%)',
-            opacity: 0.9, zIndex: 5,
-          }}
-        />
-
-        {/* Corner labels */}
-        <span style={{ position: 'absolute', top: '6px', left: '8px', fontSize: '0.62rem', opacity: 0.4, zIndex: 5 }}>
-          {isSantander ? 'N 8°07\'' : 'N 12°27\''}
-        </span>
-        <span style={{ position: 'absolute', bottom: '6px', right: '8px', fontSize: '0.62rem', opacity: 0.4, zIndex: 5 }}>
-          {isSantander ? 'W 73°32\'' : 'W 74°00\''}
-        </span>
-        <span style={{ position: 'absolute', bottom: '6px', left: '85px', fontSize: '0.6rem', opacity: 0.25, letterSpacing: '1px', zIndex: 5 }}>VAULT-TEC CARTOGRAPHY v3.2</span>
-
-        {/* Page indicator */}
-        <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: isSantander ? GREEN : 'transparent', border: `1px solid ${GREEN}`, transition: 'background 0.3s' }} />
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: !isSantander ? GREEN : 'transparent', border: `1px solid ${GREEN}`, transition: 'background 0.3s' }} />
-        </div>
-      </div>
-    </motion.div>
+    </>
   );
 }
 
-// Santander map using real GeoJSON + d3-geo
-function SantanderMapSVG() {
-  const { pathD, projectedCities } = useMemo(() => {
-    const projection = geoMercator()
-      .center([-73.5, 6.9])
-      .scale(10000)
-      .translate([WIDTH / 2, HEIGHT / 2]);
+function isInsideSantander(wp: Waypoint) {
+  const [lon, lat] = wp.coords;
+  return lon > -74.6 && lon < -72.4 && lat > 5.6 && lat < 8.2;
+}
 
-    const pathGen = geoPath().projection(projection);
-    const feature = santanderData as unknown as Feature<Polygon>;
-    const d = pathGen(feature) || '';
+function Marker({ x, y, wp, selected, onSelect, size = 1 }: {
+  x: number; y: number; wp: Waypoint; selected: boolean; onSelect: (id: string) => void; size?: number;
+}) {
+  const r = (wp.home ? 4 : 3) * size;
+  return (
+    <g className="map-marker" tabIndex={0} role="button" aria-label={`${wp.name} · ${wp.label}`}
+      onClick={() => onSelect(wp.id)}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(wp.id); } }}>
+      <circle className="ring" cx={x} cy={y} r={r + 2} fill="rgb(var(--pip-rgb) / 0.25)" stroke="var(--pip)" strokeWidth={1.4}>
+        <animate attributeName="r" values={`${r + 2};${r + 6};${r + 2}`} dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={x} cy={y} r={r} fill="var(--pip)" stroke="none" />
+      {selected && <rect x={x - r - 7} y={y - r - 7} width={2 * r + 14} height={2 * r + 14} fill="none" stroke="var(--pip)" strokeWidth={1} strokeDasharray="3 2" />}
+      <text x={wp.home ? x + r + 8 : x - r - 8} y={y + 3.5} textAnchor={wp.home ? 'start' : 'end'}
+        fontSize={9 * Math.min(size, 1.1)} fill="var(--pip)" stroke="none" fontWeight={700} letterSpacing={1}
+        style={{ filter: 'drop-shadow(0 0 4px rgb(var(--pip-rgb) / 0.8))' }}>
+        {wp.name.toUpperCase()}
+      </text>
+      <circle cx={x} cy={y} r={14} fill="transparent" stroke="none" />
+    </g>
+  );
+}
 
-    const projected = santanderCities.map(city => {
-      const point = projection(city.coords);
-      return { ...city, x: point?.[0] ?? 0, y: point?.[1] ?? 0 };
-    });
+interface MapProps {
+  waypoints: Waypoint[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}
 
-    return { pathD: d, projectedCities: projected };
+function project(p: GeoProjection, coords: [number, number]) {
+  const pt = p(coords);
+  return { x: pt?.[0] ?? 0, y: pt?.[1] ?? 0 };
+}
+
+function LocalMap({ waypoints, selectedId, onSelect }: MapProps) {
+  const { outline, towns, proj } = useMemo(() => {
+    const p = localProjection();
+    return {
+      proj: p,
+      outline: geoPath().projection(p)(santander) ?? '',
+      towns: TOWNS.map(c => ({ ...c, ...project(p, c.coords) })),
+    };
   }, []);
 
   return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '88%', height: '88%' }}
-      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
-      <path d={pathD} strokeWidth="2" fill="rgba(20,248,20,0.03)"
-        strokeLinejoin="round" strokeLinecap="round"
-        style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }} />
-
-      {projectedCities.map((city, i) => (
-        <g key={i}>
-          {city.capital ? (
-            <>
-              <circle cx={city.x} cy={city.y} r="5" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
-                <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
-              </circle>
-              <circle cx={city.x} cy={city.y} r="3" fill={GREEN} stroke="none" />
-              <text x={city.x + 9} y={city.y + 3} fontSize="8" fill={GREEN} stroke="none"
-                fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 4px ${GREEN})` }}>
-                {city.name}
-              </text>
-            </>
-          ) : (
-            <>
-              <circle cx={city.x} cy={city.y} r="2.5" fill="rgba(20,248,20,0.25)" stroke={GREEN} strokeWidth="0.8" />
-              <text x={city.x + 5} y={city.y + 3} fontSize="5.5" fill={GREEN} stroke="none" opacity="0.6">
-                {city.name}
-              </text>
-            </>
-          )}
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} fill="none" stroke="var(--pip)" aria-hidden="true">
+      <path d={outline} strokeWidth={2} fill="rgb(var(--pip-rgb) / 0.04)" strokeLinejoin="round"
+        style={{ filter: 'drop-shadow(0 0 4px rgb(var(--pip-rgb) / 0.8))' }} />
+      {towns.map(c => (
+        <g key={c.name} opacity={0.6}>
+          <circle cx={c.x} cy={c.y} r={2.2} fill="rgb(var(--pip-rgb) / 0.3)" strokeWidth={0.8} />
+          <text x={c.x + 5} y={c.y + 2.5} fontSize={6} fill="var(--pip)" stroke="none">{c.name}</text>
         </g>
       ))}
-
+      {waypoints.filter(isInsideSantander).map(wp => {
+        const { x, y } = project(proj, wp.coords);
+        return <Marker key={wp.id} x={x} y={y} wp={wp} selected={wp.id === selectedId} onSelect={onSelect} size={1.2} />;
+      })}
       <MapExtras />
     </svg>
   );
 }
 
-// Colombia map - all departments, Santander highlighted
-function ColombiaMapSVG() {
-  const { departments, santanderCenter } = useMemo(() => {
-    const projection = geoMercator()
-      .center([-74.0, 4.5])
-      .scale(2400)
-      .translate([WIDTH / 2, HEIGHT / 2]);
+function WorldMap({ waypoints, selectedId, onSelect }: MapProps) {
+  const { departments, points } = useMemo(() => {
+    const p = worldProjection();
+    const path = geoPath().projection(p);
+    return {
+      departments: colombia.features.map(f => ({ d: path(f) ?? '', code: f.properties.DPTO })),
+      points: waypoints.map(wp => ({ wp, ...project(p, wp.coords) })),
+    };
+  }, [waypoints]);
 
-    const pathGen = geoPath().projection(projection);
-    const collection = colombiaData as unknown as FeatureCollection<Polygon | MultiPolygon>;
-
-    const deps = collection.features.map(f => ({
-      d: pathGen(f) || '',
-      isSantander: (f.properties as { DPTO: string }).DPTO === '68',
-      name: (f.properties as { NAME: string }).NAME,
-    }));
-
-    const santFeature = collection.features.find(f => (f.properties as { DPTO: string }).DPTO === '68');
-    let center: [number, number] = [0, 0];
-    if (santFeature) {
-      const centroid = geoPath().projection(projection).centroid(santFeature);
-      center = [centroid[0], centroid[1]];
-    }
-
-    return { departments: deps, santanderCenter: center };
-  }, []);
+  const home = points.find(pt => pt.wp.home);
 
   return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '88%', height: '88%' }}
-      fill="none" stroke={GREEN} xmlns="http://www.w3.org/2000/svg">
-
-      {departments.map((dep, i) => (
-        <path key={i} d={dep.d}
-          strokeWidth={dep.isSantander ? '2' : '0.6'}
-          fill={dep.isSantander ? 'rgba(20,248,20,0.12)' : 'rgba(20,248,20,0.02)'}
-          opacity={dep.isSantander ? 1 : 0.5}
-          strokeLinejoin="round" strokeLinecap="round"
-          style={dep.isSantander ? { filter: `drop-shadow(0 0 6px ${GREEN})` } : undefined}
-        />
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} fill="none" stroke="var(--pip)" aria-hidden="true">
+      {departments.map(dep => {
+        const highlight = dep.code === SANTANDER_CODE;
+        const secondary = dep.code === ANTIOQUIA_CODE;
+        return (
+          <path key={dep.code} d={dep.d}
+            strokeWidth={highlight ? 2 : 0.6}
+            fill={highlight ? 'rgb(var(--pip-rgb) / 0.14)' : secondary ? 'rgb(var(--pip-rgb) / 0.07)' : 'rgb(var(--pip-rgb) / 0.02)'}
+            opacity={highlight ? 1 : secondary ? 0.8 : 0.5}
+            strokeLinejoin="round"
+            style={highlight ? { filter: 'drop-shadow(0 0 6px rgb(var(--pip-rgb) / 0.8))' } : undefined} />
+        );
+      })}
+      {/* Remote link from home base to every other waypoint */}
+      {home && points.filter(pt => !pt.wp.home).map(pt => (
+        <line key={pt.wp.id} x1={home.x} y1={home.y} x2={pt.x} y2={pt.y} strokeWidth={1} strokeDasharray="4 3" opacity={0.75}>
+          <animate attributeName="stroke-dashoffset" values="14;0" dur="1s" repeatCount="indefinite" />
+        </line>
       ))}
-
-      {/* Santander pulsing marker */}
-      <circle cx={santanderCenter[0]} cy={santanderCenter[1]} r="6" fill="rgba(20,248,20,0.3)" stroke={GREEN} strokeWidth="1.5">
-        <animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
-      </circle>
-      <circle cx={santanderCenter[0]} cy={santanderCenter[1]} r="4" fill={GREEN} stroke="none" />
-      <text x={santanderCenter[0] + 10} y={santanderCenter[1] + 4} fontSize="9" fill={GREEN} stroke="none"
-        fontWeight="bold" letterSpacing="1" style={{ filter: `drop-shadow(0 0 5px ${GREEN})` }}>
-        SANTANDER
-      </text>
-
+      {points.map(pt => (
+        <Marker key={pt.wp.id} x={pt.x} y={pt.y} wp={pt.wp} selected={pt.wp.id === selectedId} onSelect={onSelect} />
+      ))}
       <MapExtras />
     </svg>
   );
 }
 
-// Shared decorative elements
 function MapExtras() {
   return (
     <>
-      {/* Compass Rose */}
-      <g transform={`translate(${WIDTH - 30}, ${HEIGHT - 40})`} opacity="0.4">
-        <line x1="0" y1="-14" x2="0" y2="14" strokeWidth="0.8" />
-        <line x1="-14" y1="0" x2="14" y2="0" strokeWidth="0.8" />
-        <line x1="-9" y1="-9" x2="9" y2="9" strokeWidth="0.4" />
-        <line x1="9" y1="-9" x2="-9" y2="9" strokeWidth="0.4" />
-        <text x="-3" y="-18" fontSize="7" fill={GREEN} stroke="none" fontWeight="bold">N</text>
-        <text x="-2" y="24" fontSize="5" fill={GREEN} stroke="none">S</text>
-        <text x="18" y="2" fontSize="5" fill={GREEN} stroke="none">E</text>
-        <text x="-22" y="2" fontSize="5" fill={GREEN} stroke="none">W</text>
-        <circle cx="0" cy="0" r="2.5" strokeWidth="0.8" fill="rgba(20,248,20,0.2)" />
-      </g>
-
-      {/* Scale bar */}
-      <g transform="translate(12, 525)" opacity="0.3">
-        <line x1="0" y1="0" x2="60" y2="0" strokeWidth="0.8" />
-        <line x1="0" y1="-3" x2="0" y2="3" strokeWidth="0.8" />
-        <line x1="30" y1="-2" x2="30" y2="2" strokeWidth="0.5" />
-        <line x1="60" y1="-3" x2="60" y2="3" strokeWidth="0.8" />
-        <text x="0" y="9" fontSize="5" fill={GREEN} stroke="none">0</text>
-        <text x="22" y="9" fontSize="5" fill={GREEN} stroke="none">50km</text>
-        <text x="48" y="9" fontSize="5" fill={GREEN} stroke="none">100km</text>
+      <g transform={`translate(${WIDTH - 30}, ${HEIGHT - 44})`} opacity={0.5}>
+        <line x1={0} y1={-14} x2={0} y2={14} strokeWidth={0.8} />
+        <line x1={-14} y1={0} x2={14} y2={0} strokeWidth={0.8} />
+        <line x1={-9} y1={-9} x2={9} y2={9} strokeWidth={0.4} />
+        <line x1={9} y1={-9} x2={-9} y2={9} strokeWidth={0.4} />
+        <text x={-3} y={-18} fontSize={7} fill="var(--pip)" stroke="none" fontWeight={700}>N</text>
+        <circle cx={0} cy={0} r={2.5} strokeWidth={0.8} fill="rgb(var(--pip-rgb) / 0.2)" />
       </g>
     </>
   );
 }
 
-function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
-  return {
-    position: 'absolute',
-    [side]: '6px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    background: 'rgba(0,0,0,0.6)',
-    border: `1px solid ${GREEN}`,
-    color: GREEN,
-    fontSize: '1rem',
-    padding: '8px 6px',
-    cursor: 'pointer',
-    zIndex: 10,
-    lineHeight: 1,
-    textShadow: `0 0 6px ${GREEN}`,
-  };
-}
+function Contact() {
+  const { t, profile, settings } = usePip();
+  const [copied, setCopied] = useState(false);
+  const now = useNow(15_000);
+  const bogotaTime = now.toLocaleTimeString(settings.lang === 'es' ? 'es-CO' : 'en-US', {
+    timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit',
+  });
 
-function WaypointCard({ icon, label, value, sub, link }: { icon: string; label: string; value: string; sub?: string; link?: string }) {
-  const card = (
-    <div style={{
-      border: `1px solid ${GREEN}`, padding: '0.75rem',
-      display: 'flex', alignItems: 'center', gap: '0.75rem',
-      cursor: link ? 'pointer' : 'default', transition: 'background 0.15s',
-    }}
-      onMouseEnter={e => { if (link) (e.currentTarget as HTMLElement).style.background = 'rgba(20,248,20,0.08)'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-    >
-      <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: '0.78rem', opacity: 0.5, letterSpacing: '1px' }}>{label}</div>
-        <div style={{ fontSize: '0.95rem', lineHeight: 1.4, wordBreak: 'break-all' }}>{value}</div>
-        {sub && <div style={{ fontSize: '0.78rem', opacity: 0.45 }}>{sub}</div>}
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(profile.email);
+      setCopied(true);
+      soundEffects.confirm();
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      soundEffects.deny();
+    }
+  };
+
+  return (
+    <>
+      <span className="section-label">// {t.mapUi.contact}</span>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        <a className="waypoint" href={`mailto:${profile.email}`} style={{ flex: 1, minWidth: 0 }}>
+          <Mail aria-hidden="true" />
+          <span style={{ minWidth: 0 }}>
+            <span className="wp-label">{t.mapUi.email}</span>
+            <span className="wp-value" style={{ display: 'block', textTransform: 'none' }}>{profile.email}</span>
+          </span>
+        </a>
+        <button type="button" className="pbtn" onClick={copy} aria-label={t.mapUi.copy} title={t.mapUi.copy} style={{ minWidth: '2.6rem' }}>
+          {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+          <span className="sr-only" aria-live="polite">{copied ? t.mapUi.copied : ''}</span>
+        </button>
       </div>
-    </div>
+      <a className="waypoint" href={profile.linkedin} target="_blank" rel="noopener noreferrer">
+        <LinkedinIcon />
+        <span>
+          <span className="wp-label">LinkedIn</span>
+          <span className="wp-value" style={{ display: 'block', textTransform: 'none' }}>{profile.linkedin.replace(/^https:\/\/(www\.)?/, '')}</span>
+        </span>
+      </a>
+      <a className="waypoint" href={profile.github} target="_blank" rel="noopener noreferrer">
+        <GithubIcon />
+        <span>
+          <span className="wp-label">GitHub</span>
+          <span className="wp-value" style={{ display: 'block', textTransform: 'none' }}>{profile.github.replace(/^https:\/\//, '')}</span>
+        </span>
+      </a>
+      <div className="waypoint" style={{ flexDirection: 'column', gap: '0.25rem' }}>
+        <span className="wp-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Radio aria-hidden="true" style={{ width: '1rem', height: '1rem', margin: 0 }} />
+          {t.mapUi.signal}: <span className="pulse" style={{ color: 'var(--pip)' }}>{t.mapUi.online}</span>
+        </span>
+        {profile.availability.map(a => <span key={a} className="wp-sub" style={{ fontSize: '0.9rem' }}>► {a}</span>)}
+        <span className="wp-sub" style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <MapPin aria-hidden="true" style={{ width: '0.95rem', height: '0.95rem', margin: 0 }} />
+          {t.mapUi.localTime}: {bogotaTime} · {profile.timezoneLabel}
+        </span>
+      </div>
+    </>
   );
-  if (link) return <a href={link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>{card}</a>;
-  return card;
 }

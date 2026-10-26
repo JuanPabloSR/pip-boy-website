@@ -1,11 +1,41 @@
 let audioCtx: AudioContext | null = null;
+let sfxEnabled = true;
 
-function getCtx(): AudioContext {
+type WindowWithWebkit = Window & { webkitAudioContext?: typeof AudioContext };
+
+/** Shared AudioContext (also used by the radio's procedural stations). */
+export function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const Ctor = window.AudioContext ?? (window as WindowWithWebkit).webkitAudioContext!;
+    audioCtx = new Ctor();
   }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx.state === 'suspended') void audioCtx.resume();
   return audioCtx;
+}
+
+/** Browsers only allow audio after a user gesture: call this from one. */
+export function unlockAudio() {
+  try {
+    getAudioContext();
+  } catch {
+    /* audio unsupported: stay silent */
+  }
+}
+
+export function setSfxEnabled(enabled: boolean) {
+  sfxEnabled = enabled;
+}
+
+// Sound effects bail out with this when the user muted them.
+function getCtx(): AudioContext {
+  if (!sfxEnabled) throw new SfxMuted();
+  return getAudioContext();
+}
+
+class SfxMuted extends Error {}
+
+function report(name: string, e: unknown) {
+  if (!(e instanceof SfxMuted)) console.error(`${name} audio failed`, e);
 }
 
 // Creates a short noise burst with envelope shaping
@@ -124,7 +154,7 @@ export const soundEffects = {
       g2.connect(ctx.destination);
       src2.start(t + 0.025);
     } catch (e) {
-      console.error('tabSwitch audio failed', e);
+      report('tabSwitch', e);
     }
   },
 
@@ -170,7 +200,7 @@ export const soundEffects = {
       g2.connect(ctx.destination);
       src.start();
     } catch (e) {
-      console.error('subTabSwitch audio failed', e);
+      report('subTabSwitch', e);
     }
   },
 
@@ -193,7 +223,7 @@ export const soundEffects = {
       osc.start();
       osc.stop(t + 0.008);
     } catch (e) {
-      console.error('hover audio failed', e);
+      report('hover', e);
     }
   },
 
@@ -263,7 +293,7 @@ export const soundEffects = {
       staticGain.connect(ctx.destination);
       staticSrc.start();
     } catch (e) {
-      console.error('bootHum audio failed', e);
+      report('bootHum', e);
     }
   },
 
@@ -292,7 +322,7 @@ export const soundEffects = {
       osc.start();
       osc.stop(t + 0.006);
     } catch (e) {
-      console.error('typewriterClick audio failed', e);
+      report('typewriterClick', e);
     }
   },
 
@@ -320,7 +350,7 @@ export const soundEffects = {
       gain.connect(ctx.destination);
       src.start();
     } catch (e) {
-      console.error('radioStatic audio failed', e);
+      report('radioStatic', e);
     }
   },
 
@@ -359,7 +389,7 @@ export const soundEffects = {
       g2.connect(ctx.destination);
       src.start(t + 0.05);
     } catch (e) {
-      console.error('powerDown audio failed', e);
+      report('powerDown', e);
     }
   },
 
@@ -384,7 +414,7 @@ export const soundEffects = {
       osc.start();
       osc.stop(t + 0.16);
     } catch (e) {
-      console.error('confirm audio failed', e);
+      report('confirm', e);
     }
   },
 
@@ -414,7 +444,7 @@ export const soundEffects = {
       osc.start();
       osc.stop(t + 0.22);
     } catch (e) {
-      console.error('deny audio failed', e);
+      report('deny', e);
     }
   },
 };

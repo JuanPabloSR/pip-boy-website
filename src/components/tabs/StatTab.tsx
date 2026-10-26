@@ -1,207 +1,184 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import thumbsUpGif from '../../assets/correct-thumbs-up.gif';
-import flexGif from '../../assets/vaultboy-flex.gif';
-import gamingGif from '../../assets/gaming.gif';
-import VaultBoyDisplay from '../VaultBoyDisplay';
+import { useState } from 'react';
+import { Mail, Printer } from 'lucide-react';
+import { levelFromExperience } from '../../data';
+import { useListNav } from '../../hooks/useListNav';
+import { usePip } from '../../state/pip';
 import { soundEffects } from '../../utils/audio';
-
-type SubTab = 'STATUS' | 'SPECIAL' | 'PERKS';
-const SUBTABS: SubTab[] = ['STATUS', 'SPECIAL', 'PERKS'];
-
-const GREEN = '#14F814';
-const BLACK = '#000000';
-
-const SPECIAL = [
-  { name: 'Java / Spring Boot',    value: 9, desc: 'Backend empresarial. REST APIs, JPA, Security, WebFlux reactivo y microservicios con Spring Cloud.' },
-  { name: 'Angular / TypeScript',  value: 8, desc: 'SPAs enterprise con RxJS, NgRx, Angular Material, módulos lazy-loading y testing unitario.' },
-  { name: 'React.js',              value: 7, desc: 'Componentes modernos con hooks, context API, Framer Motion y ecosistema frontend actual.' },
-  { name: 'Microservicios',        value: 9, desc: 'Arquitectura limpia, DDD, mensajería con ActiveMQ, RabbitMQ y patrones de resiliencia.' },
-  { name: 'Cloud (AWS / Azure)',   value: 7, desc: 'Despliegues con EC2, S3, RDS, Azure DevOps, pipelines CI/CD y gestión de entornos.' },
-  { name: 'Python / LLMs',         value: 6, desc: 'Scripts de automatización, integración con Ollama, LangChain y modelos de lenguaje locales.' },
-  { name: 'DevOps / Calidad',      value: 7, desc: 'SonarQube, JUnit, Mockito, cobertura de código, Docker y GitHub Actions.' },
-];
-
-const PERKS = [
-  { name: 'CLEAN ARCHITECT',        rank: 3, desc: 'Principios SOLID, Clean Architecture y DDD aplicados en proyectos reales de alto tráfico.' },
-  { name: 'REACTIVE MASTER',        rank: 3, desc: 'Programación reactiva con Spring WebFlux y RxJS en proyectos del sector asegurador.' },
-  { name: 'MESSAGE BROKER EXPERT',  rank: 2, desc: 'Sistemas de mensajería asíncrona: ActiveMQ, RabbitMQ. Desacoplamiento de servicios.' },
-  { name: 'CLOUD WALKER',           rank: 2, desc: 'Despliegue y gestión de servicios en AWS y Azure con pipelines automatizados.' },
-  { name: 'LOCAL AI TINKERER',      rank: 1, desc: 'Experimentación con LLMs locales via Ollama. Integración de IA en flujos de desarrollo.' },
-  { name: 'CAFEOMANIAC',            rank: 1, desc: '+15% de productividad garantizada con V60 a 92°C. Ratio 1:15. Sin bugs después del bloom.' },
-];
-
-const subStyle = (active: boolean): React.CSSProperties => ({
-  background: 'transparent',
-  border: 'none',
-  color: active ? GREEN : 'rgba(20,248,20,0.4)',
-  fontFamily: "'Share Tech Mono', monospace",
-  fontSize: '1.1rem',
-  cursor: 'pointer',
-  padding: '2px 4px',
-  borderBottom: active ? `2px solid ${GREEN}` : '2px solid transparent',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '1px',
-  textShadow: active ? `0 0 6px ${GREEN}` : 'none',
-  transition: 'all 0.15s',
-});
+import { GithubIcon, LinkedinIcon } from '../Icon';
+import SubTabs from '../SubTabs';
+import VaultBoy from '../VaultBoy';
 
 export default function StatTab() {
-  const [subTab, setSubTab] = useState<SubTab>('SPECIAL');
-  const [selectedSpecial, setSelectedSpecial] = useState(SPECIAL[0]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === 'a' || e.key === 'ArrowLeft') {
-        const idx = SUBTABS.indexOf(subTab);
-        setSubTab(SUBTABS[(idx - 1 + SUBTABS.length) % SUBTABS.length]);
-        soundEffects.subTabSwitch();
-      } else if (key === 'd' || e.key === 'ArrowRight') {
-        const idx = SUBTABS.indexOf(subTab);
-        setSubTab(SUBTABS[(idx + 1) % SUBTABS.length]);
-        soundEffects.subTabSwitch();
-      } else if ((key === 'w' || e.key === 'ArrowUp') && subTab === 'SPECIAL') {
-        e.preventDefault();
-        const idx = SPECIAL.findIndex(s => s.name === selectedSpecial.name);
-        if (idx > 0) {
-          setSelectedSpecial(SPECIAL[idx - 1]);
-          soundEffects.hover();
-        }
-      } else if ((key === 's' || e.key === 'ArrowDown') && subTab === 'SPECIAL') {
-        e.preventDefault();
-        const idx = SPECIAL.findIndex(s => s.name === selectedSpecial.name);
-        if (idx < SPECIAL.length - 1) {
-          setSelectedSpecial(SPECIAL[idx + 1]);
-          soundEffects.hover();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [subTab, selectedSpecial]);
-
+  const { t, subTab } = usePip();
+  const labels = [t.stat.status, t.stat.special, t.stat.perks];
+  const active = subTab.STAT;
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Sub-tabs */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
-        {(['STATUS', 'SPECIAL', 'PERKS'] as SubTab[]).map(t => (
-          <button key={t} onClick={() => setSubTab(t)} style={subStyle(subTab === t)}>{t}</button>
-        ))}
-      </div>
-
-      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-        <AnimatePresence mode="wait">
-
-          {/* ── STATUS ── */}
-          {subTab === 'STATUS' && (
-            <motion.div key="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ display: 'flex', gap: '2rem', height: '100%' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'auto' }} className="no-scrollbar">
-                <div style={{ border: `1px solid ${GREEN}`, padding: '1rem', boxShadow: `0 0 8px rgba(20,248,20,0.2)` }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', textShadow: `0 0 8px ${GREEN}` }}>JUAN PABLO SÁNCHEZ REY</div>
-                  <div style={{ fontSize: '1.1rem', opacity: 0.8, marginTop: '4px' }}>Desarrollador Full Stack · Nivel 6</div>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.5, marginTop: '4px' }}>VAULT-TEC ID: JPSR-007 · Bucaramanga, Santander, COL</div>
-                </div>
-                <div style={{ border: `1px solid ${GREEN}`, padding: '1rem', fontSize: '1rem', lineHeight: 1.7, opacity: 0.85 }}>
-                  <div style={{ opacity: 0.5, marginBottom: '0.5rem', fontSize: '0.85rem' }}>// BIO DEL SUPERVIVIENTE</div>
-                  Más de <strong>4 años</strong> construyendo software empresarial escalable en el Wasteland digital.
-                  Especialista en arquitecturas de microservicios, APIs REST robustas y frontends de alto rendimiento.
-                  Actualmente activo en <strong>Nexos Software</strong>, desplegando soluciones en la nube y
-                  liderando módulos críticos de integración empresarial.
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  {[['4+', 'AÑOS EXP.'], ['10+', 'PROYECTOS'], ['2', 'EMPRESAS'], ['3', 'CERTS.']].map(([v, k]) => (
-                    <div key={k} style={{ border: `1px solid ${GREEN}`, padding: '0.75rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2rem', fontWeight: 'bold', textShadow: `0 0 10px ${GREEN}` }}>{v}</div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.55 }}>{k}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <VaultBoyDisplay src={thumbsUpGif} size={320} />
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── SPECIAL ── */}
-          {subTab === 'SPECIAL' && (
-            <motion.div key="special" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ display: 'flex', gap: '2rem', height: '100%' }}>
-              {/* List */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'auto' }} className="no-scrollbar">
-                {SPECIAL.map(attr => (
-                  <div key={attr.name} onClick={() => setSelectedSpecial(attr)}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '6px 8px', cursor: 'pointer', transition: 'all 0.1s',
-                      background: selectedSpecial.name === attr.name ? GREEN : 'transparent',
-                      color: selectedSpecial.name === attr.name ? BLACK : GREEN,
-                      fontSize: '1.1rem',
-                    }}
-                  >
-                    <span>{attr.name}</span>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.3rem' }}>{attr.value}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Detail */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <VaultBoyDisplay src={flexGif} size={480} />
-                </div>
-                <div style={{ border: `1px solid ${GREEN}`, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{selectedSpecial.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div key={i} style={{
-                        flex: 1, height: '10px', border: `1px solid ${GREEN}`,
-                        background: i < selectedSpecial.value ? GREEN : 'transparent',
-                        boxShadow: i < selectedSpecial.value ? `0 0 4px ${GREEN}` : 'none',
-                      }} />
-                    ))}
-                    <span style={{ fontWeight: 'bold', marginLeft: '6px' }}>{selectedSpecial.value}</span>
-                  </div>
-                  <p style={{ fontSize: '0.95rem', opacity: 0.8, lineHeight: 1.6, margin: 0 }}>{selectedSpecial.desc}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── PERKS ── */}
-          {subTab === 'PERKS' && (
-            <motion.div key="perks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ display: 'flex', gap: '2rem', height: '100%' }}
-            >
-              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', overflow: 'auto', alignContent: 'start' }} className="no-scrollbar">
-                {PERKS.map(perk => (
-                  <div key={perk.name} style={{ border: `1px solid ${GREEN}`, padding: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 'bold', lineHeight: 1.3 }}>{perk.name}</div>
-                      <div style={{ display: 'flex', gap: '3px', flexShrink: 0, marginLeft: '8px' }}>
-                        {Array.from({ length: 3 }).map((_, i) => (
-                          <div key={i} style={{
-                            width: '11px', height: '11px', border: `1px solid ${GREEN}`,
-                            background: i < perk.rank ? GREEN : 'transparent',
-                          }} />
-                        ))}
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '0.85rem', opacity: 0.7, lineHeight: 1.5, margin: 0 }}>{perk.desc}</p>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <VaultBoyDisplay src={gamingGif} size={260} />
-              </div>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
-      </div>
-    </motion.div>
+    <>
+      <SubTabs tab="STAT" labels={labels} />
+      {active === 0 && <Status />}
+      {active === 1 && <Special />}
+      {active === 2 && <Perks />}
+    </>
   );
 }
 
+function Status() {
+  const { t, profile, setTab, printCv } = usePip();
+  const { level, progress } = levelFromExperience(profile.careerStart);
+  const special = Object.fromEntries(profile.special.map(s => [s.letter, s.value * 10]));
+  const limbs: [string, number][][] = [
+    [[t.status.limbs.head, special.I], [t.status.limbs.lArm, special.S], [t.status.limbs.lLeg, special.E]],
+    [[t.status.limbs.torso, special.P], [t.status.limbs.rArm, special.A], [t.status.limbs.rLeg, special.L]],
+  ];
+  const questsDone = profile.quests.filter(q => q.status === 'done').length;
 
+  return (
+    <div className="status">
+      <section className="dweller" aria-labelledby="dweller-name">
+        <div>
+          <div className="section-label">// {t.status.bio}</div>
+          <h1 id="dweller-name" className="dweller-name">{profile.name}</h1>
+          <div className="dweller-title">{profile.title}</div>
+          <div className="dweller-meta">{profile.headline}</div>
+          <div className="dweller-meta" style={{ marginTop: '0.2rem' }}>
+            {t.status.vaultId}: {profile.shortName}-744 · {profile.location}
+          </div>
+        </div>
+
+        <div className="pbtn-row">
+          <button type="button" className="pbtn solid" onClick={() => { soundEffects.confirm(); printCv(); }}>
+            <Printer aria-hidden="true" />{t.status.printCv}
+          </button>
+          <button type="button" className="pbtn" onClick={() => { soundEffects.tabSwitch(); setTab('MAP'); }}>
+            <Mail aria-hidden="true" />{t.status.contact}
+          </button>
+          <a className="pbtn" href={profile.linkedin} target="_blank" rel="noopener noreferrer">
+            <LinkedinIcon />{t.status.linkedin}
+          </a>
+          <a className="pbtn" href={profile.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <GithubIcon />GitHub
+          </a>
+        </div>
+
+        {profile.summary.map((p, i) => <p key={i} className="detail-text">{p}</p>)}
+
+        <div className="kpis">
+          <div className="kpi"><b>4+</b><span>{t.status.years}</span></div>
+          <div className="kpi"><b>2</b><span>{t.status.companies}</span></div>
+          <div className="kpi"><b>{profile.perks.length}</b><span>{t.status.perks}</span></div>
+          <div className="kpi"><b>{questsDone}</b><span>{t.status.quests}</span></div>
+        </div>
+      </section>
+
+      <section className="figure" aria-label={`${t.status.level} ${level}`}>
+        {limbs.map((col, c) => (
+          <div key={c} style={{ gridColumn: c === 0 ? 1 : 3, gridRow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', height: '100%', width: '100%', alignItems: c === 0 ? 'flex-end' : 'flex-start' }}>
+            {col.map(([label, value]) => (
+              <div key={label} className="limb">
+                <span>{label}</span>
+                <span className="bar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label={label}>
+                  <i style={{ width: `${value}%` }} />
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="figure-img">
+          <VaultBoy name={['status', 'thumbs-up']} />
+        </div>
+        <div className="figure-caption" style={{ gridColumn: '1 / 4', gridRow: 2 }}>
+          {profile.shortName} · {t.status.level} {level} · {Math.round(progress * 100)}% → {level + 1}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Special() {
+  const { t, profile } = usePip();
+  const [index, setIndex] = useState(0);
+  const { detailRef, pick } = useListNav(profile.special.length, index, setIndex);
+  const s = profile.special[index];
+
+  return (
+    <div className="split">
+      <div className="pane">
+        <div className="plist" role="listbox" aria-label="S.P.E.C.I.A.L.">
+          {profile.special.map((attr, i) => (
+            <button key={attr.letter} type="button" role="option" className="plist-item" aria-selected={i === index} onClick={() => pick(i)}>
+              <span className="label">
+                {attr.attribute}
+                <small>{attr.skill}</small>
+              </span>
+              <span className="value" style={{ fontSize: '1.4rem' }}>{attr.value}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="pane" ref={detailRef}>
+        <article className="detail" aria-live="polite">
+          <div className="special-hero">
+            <span className="special-letter" aria-hidden="true">{s.letter}</span>
+            <VaultBoy name={[`special-${s.letter.toLowerCase()}`, 'thumbs-up']} />
+          </div>
+          <div>
+            <h2 className="detail-title">{s.attribute} · {s.skill}</h2>
+          </div>
+          <div className="segbar" role="meter" aria-valuemin={0} aria-valuemax={10} aria-valuenow={s.value} aria-label={t.special.points}>
+            {Array.from({ length: 10 }, (_, i) => <i key={i} className={i < s.value ? 'on' : ''} />)}
+            <b style={{ marginLeft: '0.5rem', fontSize: '1.3rem' }}>{s.value}</b>
+          </div>
+          <p className="detail-text">{s.description}</p>
+          <div className="chips">{s.tags.map(tag => <span key={tag} className="chip">{tag}</span>)}</div>
+        </article>
+      </div>
+    </div>
+  );
+}
+
+function Stars({ rank, max }: { rank: number; max: number }) {
+  return (
+    <span className="stars" aria-hidden="true">
+      {Array.from({ length: max }, (_, i) => <i key={i} className={i < rank ? 'on' : ''}>★</i>)}
+    </span>
+  );
+}
+
+function Perks() {
+  const { t, profile } = usePip();
+  const [index, setIndex] = useState(0);
+  const { detailRef, pick } = useListNav(profile.perks.length, index, setIndex);
+  const perk = profile.perks[index];
+
+  return (
+    <div className="split">
+      <div className="pane">
+        <div className="plist" role="listbox" aria-label={t.stat.perks}>
+          {profile.perks.map((p, i) => (
+            <button key={p.id} type="button" role="option" className="plist-item" aria-selected={i === index} onClick={() => pick(i)}>
+              <span className="label">{p.name}</span>
+              <span className="value"><Stars rank={p.rank} max={p.maxRank} /></span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="pane" ref={detailRef}>
+        <article className="detail" aria-live="polite">
+          <div className="special-hero">
+            <VaultBoy name={[`perk-${perk.id}`, 'walk']} />
+          </div>
+          <h2 className="detail-title">{perk.name}</h2>
+          <div className="srows">
+            <div className="srow">
+              <span>{t.perks.rank}</span>
+              <b>{perk.rank}/{perk.maxRank} <Stars rank={perk.rank} max={perk.maxRank} /></b>
+            </div>
+          </div>
+          <p className="detail-text">{perk.description}</p>
+        </article>
+      </div>
+    </div>
+  );
+}

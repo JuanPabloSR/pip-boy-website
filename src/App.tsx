@@ -1,119 +1,92 @@
-import { useState, useEffect, useRef, createContext, useContext } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import Layout from './components/Layout';
-import StatTab from './components/tabs/StatTab';
-import InvTab from './components/tabs/InvTab';
-import DataTab from './components/tabs/DataTab';
-import MapTab from './components/tabs/MapTab';
-import RadioTab from './components/tabs/RadioTab';
+import { lazy, Suspense, useCallback, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import BootScreen from './components/BootScreen';
-import { soundEffects } from './utils/audio';
+import PrintCv from './components/PrintCv';
+import SettingsPanel from './components/SettingsPanel';
+import Shell from './components/Shell';
+import { PipTintFilter } from './components/VaultBoy';
+import StatTab from './components/tabs/StatTab';
+import PipProvider from './state/PipProvider';
+import RadioProvider from './state/RadioProvider';
+import { usePip } from './state/pip';
+import { readStorage, writeStorage } from './utils/storage';
 
-export type TabType = 'STAT' | 'INV' | 'DATA' | 'MAP' | 'RADIO';
+const InvTab = lazy(() => import('./components/tabs/InvTab'));
+const DataTab = lazy(() => import('./components/tabs/DataTab'));
+const MapTab = lazy(() => import('./components/tabs/MapTab'));
+const RadioTab = lazy(() => import('./components/tabs/RadioTab'));
+const Terminal = lazy(() => import('./components/terminal/Terminal'));
 
-const TABS: TabType[] = ['STAT', 'INV', 'DATA', 'MAP', 'RADIO'];
+const BOOTED_KEY = 'pipboy:booted';
 
-/* ── Global Audio Context ── */
-export interface AudioState {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-  playing: boolean;
-  setPlaying: (p: boolean | ((prev: boolean) => boolean)) => void;
-  currentStation: string;
-  setCurrentStation: (src: string) => void;
-}
+// Crawlers and link-preview bots skip the power-on screen so they see the content.
+const isBot = () => /bot|crawl|spider|slurp|facebookexternalhit|linkedin|whatsapp|lighthouse/i.test(navigator.userAgent);
 
-export const AudioCtx = createContext<AudioState | null>(null);
-export const useAudio = () => useContext(AudioCtx)!;
-
-function App() {
-  const [booted, setBooted] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('STAT');
-  const [playing, setPlaying] = useState(false);
-  const [currentStation, setCurrentStation] = useState('');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Create audio element once
-  useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.4;
-    }
-  }, []);
-
-  // React to play/pause and station changes
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (playing) {
-      if (currentStation && audio.src !== currentStation) {
-        audio.src = currentStation;
-      }
-      if (currentStation) {
-        audio.play().catch(() => setPlaying(false));
-      }
-    } else {
-      audio.pause();
-    }
-  }, [playing, currentStation]);
-
-  // Tab navigation
-  useEffect(() => {
-    if (!booted) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const currentIndex = TABS.indexOf(activeTab);
-      if (e.key.toLowerCase() === 'q' || e.key === 'ArrowLeft') {
-        soundEffects.tabSwitch();
-        setActiveTab(TABS[(currentIndex - 1 + TABS.length) % TABS.length]);
-      } else if (e.key.toLowerCase() === 'e' || e.key === 'ArrowRight') {
-        soundEffects.tabSwitch();
-        setActiveTab(TABS[(currentIndex + 1) % TABS.length]);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, booted]);
-
-  const renderTab = () => {
-    switch (activeTab) {
-      case 'STAT': return <StatTab key="STAT" />;
-      case 'INV': return <InvTab key="INV" />;
-      case 'DATA': return <DataTab key="DATA" />;
-      case 'MAP': return <MapTab key="MAP" />;
-      case 'RADIO': return <RadioTab key="RADIO" />;
-      default: return <StatTab key="STAT" />;
-    }
-  };
-
-  if (!booted) {
-    return <BootScreen onComplete={() => setBooted(true)} />;
-  }
-
+function TabView() {
+  const { tab } = usePip();
   return (
-    <AudioCtx.Provider value={{ audioRef, playing, setPlaying, currentStation, setCurrentStation }}>
-      <Layout activeTab={activeTab} setActiveTab={(tab) => {
-        if (tab !== activeTab) soundEffects.tabSwitch();
-        setActiveTab(tab);
-      }}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, scaleY: 0.9, filter: 'blur(4px) brightness(1.5)' }}
-            animate={{ opacity: 1, scaleY: 1, filter: 'blur(0px) brightness(1)' }}
-            exit={{ opacity: 0, scaleY: 1.1, filter: 'blur(4px) brightness(0.5)' }}
-            transition={{ duration: 0.12, ease: 'easeOut' }}
-            style={{ height: '100%', width: '100%' }}
-          >
-            {renderTab()}
-          </motion.div>
-        </AnimatePresence>
-      </Layout>
-    </AudioCtx.Provider>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={tab}
+        className="tab-frame"
+        initial={{ opacity: 0, filter: 'brightness(1.8) blur(2px)' }}
+        animate={{ opacity: 1, filter: 'brightness(1) blur(0px)' }}
+        exit={{ opacity: 0, filter: 'brightness(0.4) blur(2px)' }}
+        transition={{ duration: 0.12, ease: 'easeOut' }}
+      >
+        <Suspense fallback={<div className="pulse" style={{ padding: '1rem' }}>…</div>}>
+          {tab === 'STAT' && <StatTab />}
+          {tab === 'INV' && <InvTab />}
+          {tab === 'DATA' && <DataTab />}
+          {tab === 'MAP' && <MapTab />}
+          {tab === 'RADIO' && <RadioTab />}
+        </Suspense>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
-export default App;
+function Overlays() {
+  const { overlay } = usePip();
+  if (overlay === 'settings') return <SettingsPanel />;
+  if (overlay === 'terminal' || overlay === 'hack') {
+    return (
+      <Suspense fallback={null}>
+        <Terminal startWithHack={overlay === 'hack'} />
+      </Suspense>
+    );
+  }
+  return null;
+}
+
+export default function App() {
+  const [booted, setBooted] = useState(() => readStorage<boolean>(BOOTED_KEY, 'session') === true || isBot());
+
+  const onBooted = useCallback(() => {
+    writeStorage(BOOTED_KEY, true, 'session');
+    setBooted(true);
+  }, []);
+  const reboot = useCallback(() => setBooted(false), []);
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <PipProvider onReboot={reboot}>
+        <PipTintFilter />
+        <div className="crt-roll" aria-hidden="true" />
+        {booted ? (
+          <RadioProvider>
+            <div className="power-on" style={{ height: '100%' }}>
+              <Shell>
+                <TabView />
+              </Shell>
+            </div>
+            <Overlays />
+          </RadioProvider>
+        ) : (
+          <BootScreen onDone={onBooted} />
+        )}
+        <PrintCv />
+      </PipProvider>
+    </MotionConfig>
+  );
+}
