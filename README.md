@@ -119,6 +119,12 @@ cp .env.example .env   # y edita VITE_SITE_URL
 
 La imagen de vista previa es `public/og-image.png` (1200×630).
 
+## Video promocional
+
+En [`promo/`](promo/) está el video de ~48 s en motion graphics que usé para presentar el sitio
+(composición HTML determinista renderizada cuadro a cuadro + banda sonora sintetizada por código),
+junto con el texto de la publicación. Las instrucciones para regenerarlo están en [`promo/README.md`](promo/README.md).
+
 ## Stack
 
 React 19 · TypeScript · Vite · Framer Motion · d3-geo · Web Audio API · lucide-react.
