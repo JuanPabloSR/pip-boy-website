@@ -55,7 +55,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.key === 'Tab') return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.key === 'Tab' || e.key === 'Escape' || /^F\d+$/.test(e.key)) return;
       // Let the language buttons handle their own Enter/Space.
       if (e.target instanceof HTMLElement && e.target.closest('.lang-toggle')) return;
       e.preventDefault();

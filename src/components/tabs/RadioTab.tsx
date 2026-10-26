@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, SkipForward } from 'lucide-react';
-import { useKeys } from '../../hooks/useKeys';
+import { isInteractive, useKeys } from '../../hooks/useKeys';
 import { useListNav } from '../../hooks/useListNav';
 import { usePip } from '../../state/pip';
 import { useRadio, type RadioState } from '../../state/radio';
@@ -17,7 +17,7 @@ export default function RadioTab() {
   });
 
   useKeys(e => {
-    if (e.key === ' ') {
+    if (e.key === ' ' && !isInteractive(e.target)) {
       e.preventDefault();
       radio.toggle();
     }
@@ -122,6 +122,7 @@ function Oscilloscope({ radio, morse }: { radio: RadioState; morse: boolean }) {
     if (!ctx) return;
     let frame = 0;
     let raf = 0;
+    let idle = 0;
     let rgb = '20 248 20';
     let amp = 0;
 
@@ -163,9 +164,7 @@ function Oscilloscope({ radio, morse }: { radio: RadioState; morse: boolean }) {
       amp += (target - amp) * 0.25;
 
       ctx.lineWidth = 2;
-      ctx.strokeStyle = `rgb(${rgb})`;
-      ctx.shadowColor = `rgb(${rgb} / 0.9)`;
-      ctx.shadowBlur = 8;
+      ctx.strokeStyle = `rgb(${rgb})`; // the glow is a CSS drop-shadow on the canvas
       ctx.beginPath();
       const phase = time / 140;
       for (let x = 0; x <= w; x += 2) {
@@ -178,11 +177,14 @@ function Oscilloscope({ radio, morse }: { radio: RadioState; morse: boolean }) {
         else ctx.lineTo(x, py);
       }
       ctx.stroke();
-      raf = requestAnimationFrame(draw);
+      // Full frame rate only while something plays; a few frames per second otherwise.
+      if (r.playing || amp > 0.01) raf = requestAnimationFrame(draw);
+      else idle = window.setTimeout(() => { raf = requestAnimationFrame(draw); }, 250);
     };
     raf = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(idle);
       ro.disconnect();
     };
   }, []);
@@ -199,6 +201,7 @@ function Oscilloscope({ radio, morse }: { radio: RadioState; morse: boolean }) {
 function MorseTape({ radio, text, label }: { radio: RadioState; text: string; label: string }) {
   const [charIndex, setCharIndex] = useState(-1);
   useEffect(() => {
+    if (!radio.playing) return;
     let raf = 0;
     let last = -2;
     const tick = () => {

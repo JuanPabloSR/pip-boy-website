@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Settings2, Terminal } from 'lucide-react';
 import { levelFromExperience } from '../data';
 import { useKeys } from '../hooks/useKeys';
@@ -9,6 +9,7 @@ import LangToggle from './LangToggle';
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { tab, setTab, t, overlay, setOverlay } = usePip();
+  const mainRef = useRef<HTMLElement>(null);
 
   const go = (next: TabId) => {
     if (next === tab) return;
@@ -19,10 +20,12 @@ export default function Shell({ children }: { children: ReactNode }) {
   useKeys(e => {
     const key = e.key.toLowerCase();
     const i = TABS.indexOf(tab);
+    if (e.repeat) return;
     if (key === 'q') go(TABS[(i - 1 + TABS.length) % TABS.length]);
     else if (key === 'e') go(TABS[(i + 1) % TABS.length]);
     else if (/^[1-5]$/.test(e.key)) go(TABS[Number(e.key) - 1]);
-    else if (e.key === '~' || e.key === '`' || e.key === 'º' || e.key === 'Dead') {
+    // ~ on US layouts, º on Spanish ones (same physical key), or ~ typed with AltGr.
+    else if (e.key === '~' || e.key === '`' || e.key === 'º' || e.code === 'Backquote') {
       e.preventDefault();
       soundEffects.confirm();
       setOverlay('terminal');
@@ -31,7 +34,9 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="pipboy crt-flicker">
-      <a className="skip-link" href="#pip-main">{t.a11y.skip}</a>
+      <a className="skip-link" href="#pip-main" onClick={e => { e.preventDefault(); mainRef.current?.focus(); }}>
+        {t.a11y.skip}
+      </a>
 
       <header className="pip-header">
         <button type="button" className="icon-btn" onClick={() => { soundEffects.confirm(); setOverlay('settings'); }}
@@ -55,7 +60,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      <main id="pip-main" className="pip-main" role="tabpanel" aria-label={t.tabs[tab]}>
+      <main ref={mainRef} id="pip-main" className="pip-main" role="tabpanel" aria-label={t.tabs[tab]} tabIndex={-1}>
         {children}
       </main>
 

@@ -88,6 +88,17 @@ def main():
     args = ap.parse_args()
 
     frames, durations = load_frames(args.input)
+    # Exported frames can have different bounds: center them on a common canvas.
+    H = max(f.shape[0] for f in frames)
+    W = max(f.shape[1] for f in frames)
+    if any(f.shape[:2] != (H, W) for f in frames):
+        padded = []
+        for f in frames:
+            canvas = np.zeros((H, W, 4), np.float32)
+            y, x = (H - f.shape[0]) // 2, (W - f.shape[1]) // 2
+            canvas[y:y + f.shape[0], x:x + f.shape[1]] = f
+            padded.append(canvas)
+        frames = padded
     mode = detect_mode(frames) if args.mode == 'auto' else args.mode
     key = {'alpha': key_alpha, 'dark': key_dark, 'chroma': key_chroma}[mode]
     alphas = [key(f) for f in frames]

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { soundEffects } from '../../utils/audio';
 import { applyBracket, COLUMNS, guessWord, newGame, ROWS_PER_COLUMN, type HackGame } from './hackGame';
 
@@ -16,6 +16,13 @@ export default function Hacking({ lang, onWin }: Props) {
   const [game, setGame] = useState<HackGame>(newGame);
   const [hot, setHot] = useState<string | null>(null);
   const tx = TEXT[lang];
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Move keyboard focus into each new game (the dialog has no text input in this mode).
+  // `addresses` only changes when a new board is generated.
+  useEffect(() => {
+    rootRef.current?.querySelector<HTMLButtonElement>('.hack-glyph:not(:disabled)')?.focus();
+  }, [game.addresses]);
 
   useEffect(() => {
     if (game.state === 'won') {
@@ -46,7 +53,7 @@ export default function Hacking({ lang, onWin }: Props) {
   );
 
   return (
-    <div className="hack">
+    <div className="hack" ref={rootRef}>
       <div className="hack-head">
         <div>{tx.title}</div>
         <div>{game.state === 'locked' ? tx.locked : tx.enter}</div>

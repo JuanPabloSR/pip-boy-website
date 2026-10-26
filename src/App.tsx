@@ -20,7 +20,9 @@ const Terminal = lazy(() => import('./components/terminal/Terminal'));
 const BOOTED_KEY = 'pipboy:booted';
 
 // Crawlers and link-preview bots skip the power-on screen so they see the content.
-const isBot = () => /bot|crawl|spider|slurp|facebookexternalhit|linkedin|whatsapp|lighthouse/i.test(navigator.userAgent);
+const isBot = () =>
+  /googlebot|bingbot|duckduckbot|yandexbot|baiduspider|applebot|linkedinbot|facebookexternalhit|twitterbot|slackbot|discordbot|telegrambot|whatsapp\/|chrome-lighthouse|crawler|spider/i
+    .test(navigator.userAgent);
 
 function TabView() {
   const { tab } = usePip();
@@ -43,6 +45,18 @@ function TabView() {
         </Suspense>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+/** The Pip-Boy screen; inert (unfocusable, hidden from AT) while a dialog is open. */
+function MainScreen() {
+  const { overlay } = usePip();
+  return (
+    <div className="power-on" style={{ height: '100%' }} inert={overlay !== null}>
+      <Shell>
+        <TabView />
+      </Shell>
+    </div>
   );
 }
 
@@ -75,11 +89,7 @@ export default function App() {
         <div className="crt-roll" aria-hidden="true" />
         {booted ? (
           <RadioProvider>
-            <div className="power-on" style={{ height: '100%' }}>
-              <Shell>
-                <TabView />
-              </Shell>
-            </div>
+            <MainScreen />
             <Overlays />
           </RadioProvider>
         ) : (

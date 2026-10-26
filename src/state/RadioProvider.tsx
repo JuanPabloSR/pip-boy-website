@@ -156,7 +156,11 @@ export default function RadioProvider({ children }: { children: ReactNode }) {
     if (!track) return;
     if (audio.src !== track.src) audio.src = track.src;
     audio.volume = volumeRef.current;
-    audio.play().catch(() => setStreamStatus('error'));
+    let current = true;
+    // Switching src aborts the previous play(); only a real failure of this track counts.
+    audio.play().catch((e: DOMException) => {
+      if (current && e.name !== 'AbortError') setStreamStatus('error');
+    });
 
     const onPlaying = () => setStreamStatus('playing');
     const onWaiting = () => setStreamStatus('loading');
@@ -170,6 +174,7 @@ export default function RadioProvider({ children }: { children: ReactNode }) {
     audio.addEventListener('error', onError);
     audio.addEventListener('ended', onEnded);
     return () => {
+      current = false;
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('error', onError);

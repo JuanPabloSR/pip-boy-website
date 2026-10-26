@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { usePip } from '../state/pip';
 import { soundEffects } from '../utils/audio';
-import { useKeys } from './useKeys';
+import { isInteractive, useKeys } from './useKeys';
 
 const SMALL_SCREEN = '(max-width: 860px)';
 
@@ -28,7 +28,7 @@ export function useListNav(count: number, index: number, setIndex: (i: number) =
         setIndex(index + 1);
         soundEffects.hover();
       }
-    } else if (e.key === 'Enter' && onActivate && !(e.target instanceof HTMLButtonElement)) {
+    } else if (e.key === 'Enter' && onActivate && !isInteractive(e.target)) {
       e.preventDefault();
       onActivate(index);
     }

@@ -33,7 +33,7 @@ function seo(siteUrl: string): Plugin {
   ].join('\n    ');
 
   const noscript = `<noscript>
-      <style>body{overflow:auto;background:#fff}</style>
+      <style>body{overflow:auto;background:#fff}#root{display:none}</style>
       <article class="cv-static" style="max-width:52rem;margin:0 auto;padding:2rem 1.25rem;background:#fff;font-family:Arial,sans-serif">
         ${renderCvHtml(profile, 'es', siteUrl || undefined)}
       </article>

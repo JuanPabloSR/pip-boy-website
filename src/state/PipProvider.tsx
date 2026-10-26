@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { PROFILES } from '../data';
 import { UI } from '../i18n/ui';
 import { setSfxEnabled } from '../utils/audio';
@@ -26,16 +26,33 @@ function loadSettings(): Settings {
   return merged;
 }
 
-function tabFromHash(): TabId {
+function hashTab(): TabId | null {
   const hash = window.location.hash.replace('#', '').toUpperCase();
-  return (TABS as string[]).includes(hash) ? (hash as TabId) : 'STAT';
+  return (TABS as string[]).includes(hash) ? (hash as TabId) : null;
 }
 
 export default function PipProvider({ children, onReboot }: { children: ReactNode; onReboot: () => void }) {
   const [settings, setSettings] = useState<Settings>(loadSettings);
-  const [tab, setTabState] = useState<TabId>(tabFromHash);
+  const [tab, setTabState] = useState<TabId>(() => hashTab() ?? 'STAT');
   const [subTab, setSubTabs] = useState<Record<TabId, number>>({ STAT: 0, INV: 0, DATA: 0, MAP: 0, RADIO: 0 });
-  const [overlay, setOverlay] = useState<Overlay>(null);
+  const [overlay, setOverlayState] = useState<Overlay>(null);
+  const overlayRef = useRef<Overlay>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
+
+  // Dialogs remember what had focus and give it back when they close.
+  const setOverlay = useCallback((next: Overlay) => {
+    if (next && !overlayRef.current && document.activeElement instanceof HTMLElement) {
+      returnFocus.current = document.activeElement;
+    }
+    if (!next && overlayRef.current) {
+      const el = returnFocus.current;
+      returnFocus.current = null;
+      // Wait for the shell to leave its inert state before focusing back into it.
+      window.setTimeout(() => el?.focus(), 30);
+    }
+    overlayRef.current = next;
+    setOverlayState(next);
+  }, []);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings(prev => ({ ...prev, ...patch }));
@@ -58,7 +75,10 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
   }, []);
 
   useEffect(() => {
-    const onHash = () => setTabState(tabFromHash());
+    const onHash = () => {
+      const next = hashTab();
+      if (next) setTabState(next);
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -71,12 +91,12 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
     setOverlay(null);
     // Let the overlay unmount before the print snapshot is taken.
     window.setTimeout(() => window.print(), 50);
-  }, []);
+  }, [setOverlay]);
 
   const reboot = useCallback(() => {
     setOverlay(null);
     onReboot();
-  }, [onReboot]);
+  }, [onReboot, setOverlay]);
 
   const value = useMemo<PipState>(() => ({
     settings,
@@ -91,7 +111,7 @@ export default function PipProvider({ children, onReboot }: { children: ReactNod
     setOverlay,
     printCv,
     reboot,
-  }), [settings, updateSettings, tab, setTab, subTab, setSubTab, overlay, printCv, reboot]);
+  }), [settings, updateSettings, tab, setTab, subTab, setSubTab, overlay, setOverlay, printCv, reboot]);
 
   return <PipContext.Provider value={value}>{children}</PipContext.Provider>;
 }

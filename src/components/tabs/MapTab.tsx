@@ -96,7 +96,7 @@ export default function MapTab() {
           <p className="detail-text" style={{ fontSize: '0.92rem' }} aria-live="polite">{waypoints[index]?.description}</p>
         </div>
 
-        <div className="map-frame" ref={detailRef} aria-label={isLocal ? t.mapUi.santander : t.mapUi.colombia} role="img">
+        <div className="map-frame" ref={detailRef}>
           <button type="button" className="map-arrow" style={{ left: 6 }} onClick={switchMap} aria-label={t.mapUi.prev}>◄</button>
           <button type="button" className="map-arrow" style={{ right: 6 }} onClick={switchMap} aria-label={t.mapUi.next}>►</button>
 
@@ -107,6 +107,7 @@ export default function MapTab() {
           <span className="map-label" style={{ bottom: 8, right: 10 }}>{isLocal ? "W 73°32'" : "W 74°00'"}</span>
 
           {/* World layer zooms into Santander while the local layer zooms out of it */}
+          <div role="img" aria-label={isLocal ? t.mapUi.santander : t.mapUi.colombia} style={{ position: 'absolute', inset: 0 }}>
           <motion.div className="map-layer"
             initial={false}
             animate={{ scale: isLocal ? ZOOM_SCALE : 1, opacity: isLocal ? 0 : 1 }}
@@ -114,6 +115,7 @@ export default function MapTab() {
               scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] },
               opacity: isLocal ? { duration: 0.9, delay: 0.4 } : { duration: 0.5, delay: 1 },
             }}
+            inert={isLocal}
             style={{ transformOrigin: zoomOrigin, pointerEvents: isLocal ? 'none' : 'auto' }}>
             <WorldMap waypoints={waypoints} selectedId={selectedId} onSelect={id => pick(waypoints.findIndex(w => w.id === id))} />
           </motion.div>
@@ -125,9 +127,11 @@ export default function MapTab() {
               scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] },
               opacity: isLocal ? { duration: 0.5, delay: 1 } : { duration: 0.5 },
             }}
+            inert={!isLocal}
             style={{ pointerEvents: isLocal ? 'auto' : 'none' }}>
             <LocalMap waypoints={waypoints} selectedId={selectedId} onSelect={id => pick(waypoints.findIndex(w => w.id === id))} />
           </motion.div>
+          </div>
 
           <div className="map-walker"><VaultBoy name={['map', 'walk-cat']} /></div>
           <span className="map-label" style={{ bottom: 8, left: '50%', transform: 'translateX(-50%)' }}>{t.mapUi.cartography} v3.2</span>
@@ -147,9 +151,8 @@ function Marker({ x, y, wp, selected, onSelect, size = 1 }: {
 }) {
   const r = (wp.home ? 4 : 3) * size;
   return (
-    <g className="map-marker" tabIndex={0} role="button" aria-label={`${wp.name} · ${wp.label}`}
-      onClick={() => onSelect(wp.id)}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(wp.id); } }}>
+    // Mouse/touch shortcut only: the waypoint list is the accessible way to select.
+    <g className="map-marker" onClick={() => onSelect(wp.id)}>
       <circle className="ring" cx={x} cy={y} r={r + 2} fill="rgb(var(--pip-rgb) / 0.25)" stroke="var(--pip)" strokeWidth={1.4}>
         <animate attributeName="r" values={`${r + 2};${r + 6};${r + 2}`} dur="2s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite" />
