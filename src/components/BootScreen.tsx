@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Power } from 'lucide-react';
 import { usePip } from '../state/pip';
 import { soundEffects, unlockAudio } from '../utils/audio';
+import LangToggle from './LangToggle';
 import VaultBoy from './VaultBoy';
 
 type Phase = 'power' | 'terminal' | 'splash';
@@ -55,6 +56,8 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.key === 'Tab') return;
+      // Let the language buttons handle their own Enter/Space.
+      if (e.target instanceof HTMLElement && e.target.closest('.lang-toggle')) return;
       e.preventDefault();
       advance();
     };
@@ -108,6 +111,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
           <div className="boot-model">{t.power.title}</div>
           <div className="boot-prompt pulse">{t.power.prompt}</div>
           <div className="boot-sub">{t.power.sound}</div>
+          <LangToggle />
         </div>
       )}
 

@@ -235,6 +235,22 @@ img { display: block; max-width: 100%; }
   flex-direction: column;
 }
 
+/* ES | EN switch (header and power-on screen) */
+.lang-toggle { display: flex; flex-shrink: 0; border: 1px solid var(--pip-55); }
+.lang-toggle button {
+  background: transparent;
+  border: 0;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--pip-55);
+  text-shadow: none;
+}
+.lang-toggle button[aria-pressed='true'] { background: var(--pip-85); color: #000; }
+.lang-toggle button:hover { color: var(--pip); }
+.lang-toggle button[aria-pressed='true']:hover { color: #000; }
+.header-lang { margin-bottom: 0.45rem; }
+
 /* ── Footer status bar ─────────────────────────────────────────────────── */
 .pip-footer {
   display: grid;
@@ -1034,6 +1050,7 @@ a.waypoint:hover, button.waypoint:hover { background: var(--pip-15); }
   .pipboy { padding-top: 10px; }
   .pip-header { gap: 0.4rem; }
   .icon-btn { width: 1.75rem; height: 1.55rem; margin-bottom: 0.35rem; }
+  .header-lang { display: none; }
   .pip-tabs { padding: 0; justify-content: space-between; }
   .pip-tab { font-size: 1.15rem; padding: 0.25rem 0.4rem 0.3rem; letter-spacing: 0.03em; }
 

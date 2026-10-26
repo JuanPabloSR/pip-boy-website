@@ -5,6 +5,7 @@ import { useKeys } from '../hooks/useKeys';
 import { falloutDate, falloutTime, useNow } from '../hooks/useNow';
 import { TABS, usePip, type TabId } from '../state/pip';
 import { soundEffects } from '../utils/audio';
+import LangToggle from './LangToggle';
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { tab, setTab, t, overlay, setOverlay } = usePip();
@@ -47,6 +48,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
+        <LangToggle className="header-lang" />
         <button type="button" className="icon-btn" onClick={() => { soundEffects.confirm(); setOverlay('terminal'); }}
           aria-label={t.a11y.terminal} title={t.a11y.terminal}>
           <Terminal aria-hidden="true" />
