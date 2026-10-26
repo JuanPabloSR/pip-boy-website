@@ -29,6 +29,10 @@ export default function Shell({ children }: { children: ReactNode }) {
       e.preventDefault();
       soundEffects.confirm();
       setOverlay('terminal');
+    } else if (e.key === 'Escape') {
+      // Nothing open to close, so Esc brings up the Pip-Boy menu (it closes it again from inside).
+      soundEffects.confirm();
+      setOverlay('settings');
     }
   }, overlay === null);
 
@@ -40,7 +44,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <header className="pip-header">
         <button type="button" className="icon-btn" onClick={() => { soundEffects.confirm(); setOverlay('settings'); }}
-          aria-label={t.a11y.settings} title={t.a11y.settings}>
+          aria-label={t.a11y.settings} title={`${t.a11y.settings} (Esc)`} aria-keyshortcuts="Escape">
           <Settings2 aria-hidden="true" />
         </button>
 
@@ -71,6 +75,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         <span><kbd>A</kbd><kbd>D</kbd>{t.hints.sub}</span>
         <span><kbd>W</kbd><kbd>S</kbd>{t.hints.select}</span>
         <span><kbd>~</kbd>{t.hints.terminal}</span>
+        <span><kbd>Esc</kbd>{t.hints.settings}</span>
       </div>
     </div>
   );

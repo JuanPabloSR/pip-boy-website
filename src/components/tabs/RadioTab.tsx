@@ -7,9 +7,9 @@ import { useRadio, type RadioState } from '../../state/radio';
 import { toMorse } from '../../utils/morse';
 
 export default function RadioTab() {
-  const { t, profile, settings, updateSettings, overlay } = usePip();
+  const { t, settings, updateSettings, overlay } = usePip();
   const radio = useRadio();
-  const stations = profile.stations;
+  const stations = radio.stations;
   const [index, setIndex] = useState(() => Math.max(0, stations.findIndex(s => s.id === radio.stationId)));
   const { detailRef } = useListNav(stations.length, index, setIndex, i => {
     if (stations[i].id === radio.stationId) radio.toggle();
@@ -25,7 +25,7 @@ export default function RadioTab() {
 
   const current = stations.find(s => s.id === radio.stationId);
   const shown = current ?? stations[index];
-  const track = current?.tracks?.[radio.trackIndex % current.tracks.length];
+  const { track } = radio;
 
   const statusText =
     radio.status === 'playing' ? t.radio.onAir :
@@ -76,7 +76,7 @@ export default function RadioTab() {
             <>
               <div className="section-label">{t.radio.nowPlaying}</div>
               <div style={{ fontSize: '1.1rem', textTransform: 'uppercase' }}>
-                {track && radio.status === 'playing' ? `${track.title} — ${track.artist}` : radio.status === 'loading' ? `${t.radio.loading}...` : '—'}
+                {track && radio.status === 'playing' ? [track.title, track.artist].filter(Boolean).join(' — ') : radio.status === 'loading' ? `${t.radio.loading}...` : '—'}
               </div>
             </>
           )}

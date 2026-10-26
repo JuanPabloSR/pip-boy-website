@@ -1,5 +1,5 @@
 import type { Profile } from './types';
-import { RADIO_TRACKS, CONTACT } from './shared';
+import { CONTACT, STATIONS } from './shared';
 
 // Contenido en español. La versión en inglés vive en profile.en.ts y debe
 // mantener los mismos ids para que la selección se conserve al cambiar idioma.
@@ -429,16 +429,13 @@ const profile: Profile = {
   ],
 
   stations: [
-    {
-      id: 'gnr', name: 'Galaxy News Radio', freq: '87.3',
-      description: 'Fallout 3. Tres Perros no está, pero la música sí.',
-      tracks: [RADIO_TRACKS.inkSpots],
-    },
-    {
-      id: 'dcr', name: 'Diamond City Radio', freq: '101.7',
-      description: 'Fallout 4. Noticias y música desde la Gran Joya Verde.',
-      tracks: [RADIO_TRACKS.civilization, RADIO_TRACKS.anythingGoes],
-    },
+    // Música de cada juego (el tema de color elige cuál); la baliza suena con todos.
+    { id: 'dcr', ...STATIONS.dcr, description: 'Fallout 4. Noticias y música desde la Gran Joya Verde.' },
+    { id: 'classical', ...STATIONS.classical, description: 'Fallout 4. Música clásica para recorrer la Commonwealth.' },
+    { id: 'gnr', ...STATIONS.gnr, description: 'Fallout 3. Tres Perros no está, pero la música sí.' },
+    { id: 'enclave', ...STATIONS.enclave, description: 'Fallout 3. Marchas patrióticas en bucle, cortesía del presidente Eden.' },
+    { id: 'rnv', ...STATIONS.rnv, description: 'New Vegas. Swing, crooners y country para cruzar el Mojave.' },
+    { id: 'mojave', ...STATIONS.mojave, description: 'New Vegas. Las canciones del Mojave, sin locutor.' },
     {
       id: 'sos', name: 'Señal de socorro', freq: '33.3',
       description: 'Baliza en código Morse transmitiendo en bucle desde Bucaramanga. Generada en tiempo real.',

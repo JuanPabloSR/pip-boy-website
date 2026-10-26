@@ -20,7 +20,7 @@ y también está mi [LinkedIn](https://www.linkedin.com/in/juan-pablo-sanchez-re
 | **INV** | Stack técnico como inventario: *Armas* (lenguajes/frameworks), *Ropa* (testing y calidad), *Ayuda* (metodologías), *Varios* (cloud/DevOps/IDEs), *Holo* (terminal, minijuego, CV) y *Munición* (bases de datos y mensajería) |
 | **DATA** | *Misiones* (experiencia laboral y formación con objetivos y logros), *Talleres* (proyectos) y *Estadísticas* |
 | **MAP** | Mapa local (Santander) y del mundo (Colombia) con datos geográficos reales, contacto y hora local |
-| **RADIO** | Galaxy News Radio, Diamond City Radio y una *Señal de socorro* en código Morse generada en tiempo real |
+| **RADIO** | Las emisoras del juego del tema elegido: Diamond City Radio y Classical Radio (Fallout 4, también con Vault-Tec y Mk VI), Galaxy News Radio y Enclave Radio (Fallout 3) o Radio New Vegas y Mojave Music Radio (New Vegas). La *Señal de socorro* en código Morse, generada en tiempo real, suena con todos |
 
 Extras:
 
@@ -44,6 +44,7 @@ Extras:
 | `Enter` | Usar holocinta / sintonizar estación |
 | `C` · `M` · `L` · `G` | En *Estado*: descargar CV, escribirme, LinkedIn, GitHub |
 | `~` · `º` | Abrir terminal · `Esc` cierra |
+| `Esc` | Abrir el menú (color, idioma, sonido…) cuando no hay nada abierto; si hay algo abierto, lo cierra |
 
 ## Cómo está organizado el contenido
 
@@ -51,7 +52,7 @@ Todo el contenido vive en **`src/data/`**, separado de la interfaz:
 
 - `profile.es.ts` y `profile.en.ts`: perfil, SPECIAL, perks, inventario, misiones, proyectos, radio…
   Ambos cumplen la interfaz de `types.ts`, así que TypeScript avisa si una traducción queda incompleta.
-- `shared.ts`: correo, LinkedIn, GitHub y pistas de radio (comunes a ambos idiomas).
+- `shared.ts`: correo, LinkedIn, GitHub y las emisoras de radio (comunes a ambos idiomas). Cada emisora apunta a un ítem de archive.org; el navegador lee su lista de canciones de la API pública de metadatos y, si no puede, usa las pistas conocidas que tenga.
 - Los textos de la interfaz están en `src/i18n/ui.ts`.
 
 El nivel del Pip-Boy se calcula solo a partir de `careerStart` (sube con el tiempo).

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { RadioStation } from '../data/types';
+import type { RadioStation, RadioTrack } from '../data/types';
+import { archivePlaylist } from '../utils/archive';
 import { getAudioContext, soundEffects } from '../utils/audio';
 import { morseSchedule } from '../utils/morse';
 import { usePip } from './pip';
 import { RadioContext, type MorseProbe, type RadioState, type RadioStatus } from './radio';
+import { themeGame } from './themes';
 
 const MORSE_UNIT = 0.085; // seconds
 const MORSE_FREQ = 640; // Hz
@@ -96,21 +98,41 @@ function startMorse(text: string, volume: number): MorseRig {
   };
 }
 
+/** Copy of a record without one key. */
+function without<T>(record: Record<string, T>, key: string) {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 export default function RadioProvider({ children }: { children: ReactNode }) {
   const { profile, settings } = usePip();
-  const stations = profile.stations;
-  const [stationId, setStationId] = useState<string | null>(null);
+  const game = themeGame(settings.theme);
+  const stations = useMemo(() => profile.stations.filter(s => !s.game || s.game === game), [profile.stations, game]);
+  // The dial position, not the station: switching theme lands on the same slot of the other game's dial.
+  const [slot, setSlot] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [streamStatus, setStreamStatus] = useState<RadioStatus>('idle');
   const [trackIndex, setTrackIndex] = useState(0);
+  const [playlists, setPlaylists] = useState<Record<string, RadioTrack[]>>({});
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const morseRef = useRef<MorseRig | null>(null);
   const volumeRef = useRef(settings.volume);
+  const failuresRef = useRef(0);
 
-  const station: RadioStation | undefined = stations.find(s => s.id === stationId);
+  const station: RadioStation | undefined = slot === null ? undefined : stations[Math.min(slot, stations.length - 1)];
+  // The station's songs: its archive.org listing once read, otherwise its known tracks. null while loading.
+  const tracks = useMemo<RadioTrack[] | null>(() => (!station || station.morse ? null
+    : station.archive ? playlists[station.id] ?? null
+    : station.tracks ?? []), [station, playlists]);
+  const track = tracks?.length ? tracks[trackIndex % tracks.length] : null;
   // Procedural stations cannot buffer or fail to load, so they are simply "playing".
-  const status: RadioStatus = !playing || !station ? 'idle' : station.morse ? 'playing' : streamStatus;
+  const status: RadioStatus = !playing || !station ? 'idle'
+    : station.morse ? 'playing'
+    : tracks === null ? 'loading'
+    : tracks.length === 0 ? 'error'
+    : streamStatus;
 
   // One <audio> element for the whole session so music keeps playing across tabs.
   useEffect(() => {
@@ -130,7 +152,18 @@ export default function RadioProvider({ children }: { children: ReactNode }) {
     morseRef.current?.setVolume(settings.volume * 0.6);
   }, [settings.volume]);
 
-  // Drive playback from (station, track, playing).
+  // Read the playlist the first time a station goes on air.
+  useEffect(() => {
+    const source = station?.archive;
+    if (!playing || !station || !source || playlists[station.id]) return;
+    const { id, tracks: known = [] } = station;
+    archivePlaylist(source)
+      .then(list => (list.length ? list : known), () => known)
+      .then(list => setPlaylists(p => ({ ...p, [id]: list })));
+  }, [playing, station, playlists]);
+
+  // Drive playback from (station, track, playing). The track index is a dependency too,
+  // so a one-song playlist starts over when it ends.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -152,70 +185,91 @@ export default function RadioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const track = station.tracks?.[trackIndex % station.tracks.length];
-    if (!track) return;
+    // Still reading the playlist (or nothing to play): the previous station goes quiet.
+    if (!track) {
+      audio.pause();
+      return;
+    }
     if (audio.src !== track.src) audio.src = track.src;
     audio.volume = volumeRef.current;
     let current = true;
-    // Switching src aborts the previous play(); only a real failure of this track counts.
+    // Switching src aborts the previous play(); a missing file is handled by the error event below.
     audio.play().catch((e: DOMException) => {
-      if (current && e.name !== 'AbortError') setStreamStatus('error');
+      if (current && e.name !== 'AbortError' && e.name !== 'NotSupportedError') setStreamStatus('error');
     });
 
-    const onPlaying = () => setStreamStatus('playing');
+    const onPlaying = () => {
+      failuresRef.current = 0;
+      setStreamStatus('playing');
+    };
     const onWaiting = () => setStreamStatus('loading');
-    const onError = () => setStreamStatus('error');
+    // One dead link shouldn't take the station off the air: skip it, unless every song has failed.
+    const onError = () => {
+      if (++failuresRef.current < (tracks?.length ?? 0)) {
+        setStreamStatus('loading');
+        setTrackIndex(i => i + 1);
+      } else {
+        setStreamStatus('error');
+      }
+    };
     const onEnded = () => {
       setStreamStatus('loading');
       setTrackIndex(i => i + 1);
     };
+    audio.addEventListener('loadstart', onWaiting);
     audio.addEventListener('playing', onPlaying);
     audio.addEventListener('waiting', onWaiting);
     audio.addEventListener('error', onError);
     audio.addEventListener('ended', onEnded);
     return () => {
       current = false;
+      audio.removeEventListener('loadstart', onWaiting);
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('error', onError);
       audio.removeEventListener('ended', onEnded);
     };
-  }, [playing, station, trackIndex]);
+  }, [playing, station, track, tracks, trackIndex]);
 
   useEffect(() => () => morseRef.current?.stop(), []);
 
   const tune = useCallback((id: string) => {
+    const next = stations.findIndex(s => s.id === id);
+    if (next < 0) return;
     soundEffects.radioStatic(0.3, 0.12);
-    if (id !== stationId) {
-      setStationId(id);
+    if (next !== slot) {
+      setSlot(next);
       setTrackIndex(0);
     }
+    failuresRef.current = 0;
+    // A station that came up empty gets another try.
+    setPlaylists(p => (p[id]?.length === 0 ? without(p, id) : p));
     setStreamStatus('loading');
     setPlaying(true);
-  }, [stationId]);
+  }, [stations, slot]);
 
   const toggle = useCallback(() => {
-    if (!stationId) {
+    if (slot === null) {
       tune(stations[0].id);
       return;
     }
     soundEffects.radioStatic(0.15, 0.08);
     setStreamStatus('loading');
     setPlaying(p => !p);
-  }, [stationId, stations, tune]);
+  }, [slot, stations, tune]);
 
   const stop = useCallback(() => setPlaying(false), []);
 
   const nextStation = useCallback(() => {
-    const idx = stations.findIndex(s => s.id === stationId);
-    tune(stations[(idx + 1) % stations.length].id);
-  }, [stationId, stations, tune]);
+    tune(stations[((slot ?? -1) + 1) % stations.length].id);
+  }, [slot, stations, tune]);
 
   const probeMorse = useCallback(() => morseRef.current?.probe() ?? null, []);
 
+  const stationId = station?.id ?? null;
   const value = useMemo<RadioState>(() => ({
-    stationId, playing, status, trackIndex, tune, toggle, stop, nextStation, probeMorse,
-  }), [stationId, playing, status, trackIndex, tune, toggle, stop, nextStation, probeMorse]);
+    stations, stationId, playing, status, track, tune, toggle, stop, nextStation, probeMorse,
+  }), [stations, stationId, playing, status, track, tune, toggle, stop, nextStation, probeMorse]);
 
   return <RadioContext.Provider value={value}>{children}</RadioContext.Provider>;
 }

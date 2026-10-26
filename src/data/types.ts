@@ -105,12 +105,29 @@ export interface RadioTrack {
   src: string;
 }
 
+/** Games whose stations the radio carries; every screen theme tunes one of them. */
+export type RadioGame = 'fo3' | 'fo4' | 'nv';
+
+/** An archive.org item whose MP3s make up a station's playlist. */
+export interface ArchiveSource {
+  /** Item identifier, as in archive.org/details/<item> */
+  item: string;
+  /** Keep only the files whose path matches (one station inside a compilation) */
+  include?: RegExp;
+  /** Leave out the files whose path matches (DJ links, full-length rips) */
+  exclude?: RegExp;
+}
+
 export interface RadioStation {
   id: string;
   name: string;
   freq: string;
   description: string;
-  /** Streamed tracks; omitted for procedurally generated stations */
+  /** Game the station belongs to; omitted when it plays under every theme */
+  game?: RadioGame;
+  /** Where the playlist is read from, in the visitor's browser */
+  archive?: ArchiveSource;
+  /** Known tracks, played when the archive listing can't be read */
   tracks?: RadioTrack[];
   /** Procedural morse beacon: the message it keys out */
   morse?: string;

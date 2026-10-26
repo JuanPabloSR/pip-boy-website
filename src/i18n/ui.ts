@@ -117,12 +117,12 @@ const es = {
     keyTabs: 'Q / E · 1-5 — Pestañas',
     keySub: 'A / D · ← → — Sub-pestañas',
     keyList: 'W / S · ↑ ↓ — Seleccionar',
-    keyTerm: '~ — Terminal · Esc — Cerrar',
+    keyTerm: '~ — Terminal · Esc — Menú / cerrar',
   },
 
-  hints: { tabs: 'Pestañas', sub: 'Sección', select: 'Elegir', terminal: 'Terminal', settings: 'Ajustes' },
+  hints: { tabs: 'Pestañas', sub: 'Sección', select: 'Elegir', terminal: 'Terminal', settings: 'Menú' },
   footer: { hp: 'PV', ap: 'PA', level: 'Nivel' },
-  a11y: { settings: 'Abrir configuración', terminal: 'Abrir terminal', mainNav: 'Secciones del Pip-Boy', skip: 'Saltar al contenido' },
+  a11y: { settings: 'Abrir menú', terminal: 'Abrir terminal', mainNav: 'Secciones del Pip-Boy', skip: 'Saltar al contenido' },
 };
 
 export type UiStrings = typeof es;
@@ -242,12 +242,12 @@ const en: UiStrings = {
     keyTabs: 'Q / E · 1-5 — Tabs',
     keySub: 'A / D · ← → — Sub-tabs',
     keyList: 'W / S · ↑ ↓ — Select',
-    keyTerm: '~ — Terminal · Esc — Close',
+    keyTerm: '~ — Terminal · Esc — Menu / close',
   },
 
-  hints: { tabs: 'Tabs', sub: 'Section', select: 'Select', terminal: 'Terminal', settings: 'Settings' },
+  hints: { tabs: 'Tabs', sub: 'Section', select: 'Select', terminal: 'Terminal', settings: 'Menu' },
   footer: { hp: 'HP', ap: 'AP', level: 'Level' },
-  a11y: { settings: 'Open settings', terminal: 'Open terminal', mainNav: 'Pip-Boy sections', skip: 'Skip to content' },
+  a11y: { settings: 'Open menu', terminal: 'Open terminal', mainNav: 'Pip-Boy sections', skip: 'Skip to content' },
 };
 
 export const UI: Record<Lang, UiStrings> = { es, en };

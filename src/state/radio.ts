@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { RadioStation, RadioTrack } from '../data/types';
 
 export type RadioStatus = 'idle' | 'loading' | 'playing' | 'error';
 
@@ -10,10 +11,13 @@ export interface MorseProbe {
 }
 
 export interface RadioState {
+  /** Stations of the game the current theme belongs to, plus the ones every theme carries */
+  stations: RadioStation[];
   stationId: string | null;
   playing: boolean;
   status: RadioStatus;
-  trackIndex: number;
+  /** Song on air (null for the beacon or while the playlist loads) */
+  track: RadioTrack | null;
   tune: (id: string) => void;
   toggle: () => void;
   stop: () => void;

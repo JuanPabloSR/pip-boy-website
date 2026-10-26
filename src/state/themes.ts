@@ -1,3 +1,5 @@
+import type { RadioGame } from '../data/types';
+
 export type ThemeId = 'fo4' | 'fo3' | 'nv' | 'vault' | 'white';
 
 /** Pip-Boy screen colors from across the series. */
@@ -10,3 +12,6 @@ export const THEMES: { id: ThemeId; label: string; rgb: [number, number, number]
 ];
 
 export const themeRgb = (id: ThemeId) => (THEMES.find(t => t.id === id) ?? THEMES[0]).rgb;
+
+/** Which game's stations the radio carries under each theme; the non-game themes use Fallout 4's. */
+export const themeGame = (id: ThemeId): RadioGame => (id === 'fo3' || id === 'nv' ? id : 'fo4');

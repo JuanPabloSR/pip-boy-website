@@ -1,5 +1,5 @@
 import type { Profile } from './types';
-import { RADIO_TRACKS, CONTACT } from './shared';
+import { CONTACT, STATIONS } from './shared';
 
 // English content. Keep ids in sync with profile.es.ts so the current
 // selection survives a language switch.
@@ -429,16 +429,13 @@ const profile: Profile = {
   ],
 
   stations: [
-    {
-      id: 'gnr', name: 'Galaxy News Radio', freq: '87.3',
-      description: 'Fallout 3. Three Dog is gone, but the music stayed.',
-      tracks: [RADIO_TRACKS.inkSpots],
-    },
-    {
-      id: 'dcr', name: 'Diamond City Radio', freq: '101.7',
-      description: 'Fallout 4. News and music from the Great Green Jewel.',
-      tracks: [RADIO_TRACKS.civilization, RADIO_TRACKS.anythingGoes],
-    },
+    // Each game's music (the color theme picks which); the beacon plays under all of them.
+    { id: 'dcr', ...STATIONS.dcr, description: 'Fallout 4. News and music from the Great Green Jewel.' },
+    { id: 'classical', ...STATIONS.classical, description: 'Fallout 4. Classical music to roam the Commonwealth.' },
+    { id: 'gnr', ...STATIONS.gnr, description: 'Fallout 3. Three Dog is gone, but the music stayed.' },
+    { id: 'enclave', ...STATIONS.enclave, description: 'Fallout 3. Patriotic marches on loop, courtesy of President Eden.' },
+    { id: 'rnv', ...STATIONS.rnv, description: 'New Vegas. Swing, crooners and country to cross the Mojave.' },
+    { id: 'mojave', ...STATIONS.mojave, description: 'New Vegas. The songs of the Mojave, no DJ.' },
     {
       id: 'sos', name: 'Distress signal', freq: '33.3',
       description: 'Morse code beacon looping from Bucaramanga. Generated in real time.',
