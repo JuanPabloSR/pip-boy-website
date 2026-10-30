@@ -19,6 +19,28 @@ el texto de la publicación ni los botones laterales). Su portada también cabe 
 Las composiciones son líneas de tiempo deterministas sobre un motor común (`comp/engine.js`,
 `comp/style.css`): `render.cjs` las avanza cuadro a cuadro con Playwright y manda los cuadros a ffmpeg.
 
+## Archivos finales
+
+Los videos ya renderizados (48 s, cierre con `juanpablosanchezdev.com`) y sus portadas están en
+[`media/`](media/) (cada archivo pesa menos de 100 MB, el límite de GitHub por archivo):
+
+| Archivo | Formato | Para |
+| --- | --- | --- |
+| `media/videos/pipboy-promo-4x5.mp4` | 1080×1350 | Feed de LinkedIn (portada: `media/covers/cover-4x5.png`) |
+| `media/videos/pipboy-promo-9x16.mp4` | 1080×1920 | Instagram Reels (portada: `media/covers/cover-9x16.png`) |
+| `media/videos/pipboy-promo.mp4` | 1920×1080 | YouTube, la web, presentaciones |
+
+En GitHub se descargan con el botón *Download raw file* de cada archivo.
+
+`media/render-assets.zip` trae las capturas, clips, cuadros de Vault Boy y la banda sonora con que se
+renderizaron estos videos. Descomprimido en `comp/`, permite volver a renderizar exactamente lo mismo
+(por ejemplo con otra URL) sin repetir las capturas:
+
+```bash
+cd promo/comp && unzip ../media/render-assets.zip && cd ../..
+node promo/render.cjs --format=4x5 --site=otro-dominio.com
+```
+
 ## Regenerarlo
 
 Requisitos: Node + Playwright (`npm i -D playwright && npx playwright install chromium`),
