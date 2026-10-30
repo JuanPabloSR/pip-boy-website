@@ -106,10 +106,15 @@ npm run build     # genera dist/
 npm run preview
 ```
 
+Con `npm run dev` corriendo, `npm run radio:check` prueba la radio (emisoras por juego, listas de
+canciones, enlaces caídos) y el menú con `Esc`, simulando las respuestas de archive.org. Requiere Playwright,
+igual que `cv:pdf`.
+
 ### Despliegue
 
 El sitio está publicado en **GitHub Pages**. El workflow `.github/workflows/deploy.yml` compila el proyecto
 en cada push a `main` y publica `dist/` en la rama `gh-pages`. Los pull requests pasan por lint y build (`ci.yml`).
+Para publicar a mano desde otra rama: `scripts/deploy-pages.sh` (compila y sube `dist/` a `gh-pages`).
 
 El build usa rutas relativas (`base: './'`), así que `dist/` también funciona en la raíz de cualquier dominio
 (Netlify, Vercel, Cloudflare Pages…). Para compilar localmente con URLs absolutas en las vistas previas sociales:
